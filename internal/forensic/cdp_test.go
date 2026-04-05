@@ -98,6 +98,17 @@ func TestCaptureTabs_InvalidPort(t *testing.T) {
 	}
 }
 
+func TestCaptureTabs_ConnectionRefused(t *testing.T) {
+	// Use a port that nothing is listening on.
+	tabs, err := CaptureTabs(19222)
+	if err == nil {
+		t.Error("expected error for unreachable port")
+	}
+	if tabs != nil {
+		t.Error("expected nil tabs on connection refused")
+	}
+}
+
 func TestCaptureTabs_UnknownFields(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`[{"title": "Test", "type": "page", "url": "http://test.com", "newField": "ignored"}]`))
