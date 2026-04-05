@@ -1,0 +1,22 @@
+{
+  "_comment": "Contract: one file per spike, append-only. See contracts/README.md for rules.",
+  "schema_version": 1,
+  "timestamp": "2026-04-04T23:47:12-07:00",
+  "level": "critical",
+  "compression_rate": 3200.5,
+  "decompression_rate": 1800.2,
+  "swap_in_rate": 45.0,
+  "swap_out_rate": 120.3,
+  "processes": [
+    {"pid": 1234, "name": "Brave Browser Helper (Renderer)", "rss_bytes": 1288000000, "vsz_bytes": 4500000000, "cpu_pct": 34.2, "mem_pct": 2.7}
+  ],
+  "tabs": [
+    {"url": "https://youtube.com/watch?v=abc", "title": "Some Video", "type": "page"}
+  ],
+  "io": {
+    "read_bytes": 0,
+    "write_bytes": 0,
+    "source": "ioreg"
+  },
+  "vmstat": {}
+}

@@ -1,0 +1,15 @@
+{
+  "_comment": "Contract: Go daemon writes, menu bar app reads. See contracts/README.md for rules.",
+  "schema_version": 1,
+  "level": "warning",
+  "compression_rate": 842.5,
+  "helper_count": 127,
+  "top_processes": [
+    {"pid": 1234, "name": "Brave Browser Helper (Renderer)", "rss_bytes": 1288000000, "cpu_pct": 34.2}
+  ],
+  "last_spike_time": "2026-04-04T23:47:12-07:00",
+  "forensic_count": 7,
+  "suspended": [],
+  "vm_stopped": false,
+  "updated_at": "2026-04-04T23:50:01-07:00"
+}

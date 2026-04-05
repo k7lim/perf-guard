@@ -1,0 +1,47 @@
+# perf-guard default configuration
+# Copy to ~/.config/perf-guard/config.toml to customize
+
+[polling]
+normal = 30      # seconds between checks when idle
+warning = 5      # when pressure rising
+critical = 1     # when taking action
+
+[thresholds]
+warning = 500    # pages/s compressed → notify
+high = 1000      # pages/s compressed → stop VM
+critical = 2000  # pages/s compressed → SIGSTOP helpers
+max_helpers = 150 # browser helper count → SIGSTOP
+
+# Processes to NEVER touch (substring match)
+protect = [
+    "Finder", "loginwindow", "WindowServer",
+    "sshd", "Spotlight", "iTerm2", "Terminal",
+]
+
+[groups.lima]
+match = "lima"
+action = "vm-stop"
+priority = 0
+
+[groups.brave]
+match = "Brave Browser Helper"
+action = "suspend"
+priority = 1
+
+[groups.firefox]
+match = "firefox"
+action = "suspend"
+priority = 2
+
+[groups.vscode]
+match = "Code Helper"
+action = "suspend"
+priority = 3
+
+[forensic]
+enabled = true
+cdp_port = 9222
+fs_usage = false
+max_keep = 100
+cooldown = 30
+window_size = 10
