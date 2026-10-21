@@ -24,26 +24,35 @@ func CaptureProcesses(n int) ([]ProcessSnapshot, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ps: %w", err)
 	}
-	return parseProcessSnapshot(string(out), n), nil
+	procs, parseErrs, totalLines := parseProcessSnapshot(string(out), n)
+	if totalLines > 0 && parseErrs > totalLines/2 {
+		return procs, fmt.Errorf("ps: %d/%d lines failed to parse", parseErrs, totalLines)
+	}
+	return procs, nil
 }
 
-func parseProcessSnapshot(output string, n int) []ProcessSnapshot {
+func parseProcessSnapshot(output string, n int) ([]ProcessSnapshot, int, int) {
 	var results []ProcessSnapshot
+	var parseErrors int
 	lines := strings.Split(output, "\n")
 	if len(lines) < 2 {
-		return results
+		return results, 0, 0
 	}
+	dataLines := 0
 	for _, line := range lines[1:] { // skip header
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
+		dataLines++
 		fields := strings.Fields(line)
 		if len(fields) < 6 {
+			parseErrors++
 			continue
 		}
 		pid, err := strconv.Atoi(fields[0])
 		if err != nil || pid == 0 {
+			parseErrors++
 			continue
 		}
 		rss, _ := strconv.ParseUint(fields[1], 10, 64)
@@ -69,5 +78,5 @@ func parseProcessSnapshot(output string, n int) []ProcessSnapshot {
 	if n > 0 && n < len(results) {
 		results = results[:n]
 	}
-	return results
+	return results, parseErrors, dataLines
 }

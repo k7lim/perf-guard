@@ -55,6 +55,15 @@ func (s *SpikeDetector) LastSpikeTime() time.Time {
 	return s.lastSpike
 }
 
+// IsActive reports whether a spike was detected recently (within 2x cooldown).
+// During active spike storms, callers should avoid deleting snapshots.
+func (s *SpikeDetector) IsActive() bool {
+	if s.lastSpike.IsZero() {
+		return false
+	}
+	return time.Since(s.lastSpike) < 2*s.cooldown
+}
+
 func (s *SpikeDetector) average() float64 {
 	if len(s.window) == 0 {
 		return 0

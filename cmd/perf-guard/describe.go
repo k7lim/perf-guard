@@ -129,8 +129,13 @@ func describeCmd() *cobra.Command {
 						},
 					},
 					"forensics": {
-						Description: "Query forensic snapshots captured during memory pressure spikes",
+						Description: "Forensic snapshot capture and query",
 						Subcommands: map[string]commandSchema{
+							"capture": {
+								Description: "Capture a forensic snapshot right now (manual trigger)",
+								Mutates:     true,
+								Notes:       []string{"Takes ~2s (two vm_stat samples). Run when you see a freeze."},
+							},
 							"list": {
 								Description: "List forensic snapshots with pagination",
 								Flags: map[string]flagInfo{

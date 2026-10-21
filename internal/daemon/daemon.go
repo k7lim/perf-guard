@@ -110,14 +110,15 @@ func (d *Daemon) Run() error {
 		reading := monitor.ComputeRates(*d.lastSnapshot, snap)
 		d.lastSnapshot = &snap
 
-		if d.spikeDetector != nil && d.spikeDetector.Record(reading.CompressionRate) {
-			go d.captureForensic(reading)
-		}
-
 		helperSubs := d.helperSubstrings()
 		helpers, _ := d.mgr.CountHelpers(helperSubs)
 
 		newLevel := d.thresholds.Evaluate(reading.CompressionRate, helpers)
+
+		if d.spikeDetector != nil && d.spikeDetector.Record(reading.CompressionRate) {
+			captureLevel := newLevel.String()
+			go d.captureForensic(reading, captureLevel)
+		}
 
 		// Apply hysteresis: only downgrade after consecutive readings below current level
 		effectiveLevel := d.applyHysteresis(newLevel)
@@ -154,22 +155,28 @@ func (d *Daemon) act(newLevel, oldLevel pressure.Level) {
 		d.logger.Println("action: pressure rising to warning level")
 
 	case newLevel >= pressure.High && oldLevel < pressure.High:
-		d.logger.Println("action: stopping Lima VM")
-		vc := vm.NewController()
-		if err := vc.Stop(); err != nil {
-			d.logger.Printf("warning: stopping VM: %v", err)
-		} else {
-			d.state.VMStopped = true
-			d.state.Save()
+		if d.hasVMStopGroup() {
+			d.logger.Println("action: stopping Lima VM")
+			vc := vm.NewController()
+			if err := vc.Stop(); err != nil {
+				d.logger.Printf("warning: stopping VM: %v", err)
+			} else {
+				d.state.VMStopped = true
+				d.state.Save()
+			}
 		}
 
 	case newLevel >= pressure.Critical && oldLevel < pressure.Critical:
 		d.logger.Println("action: suspending helper processes")
 		d.suspendHelpers()
 
-	case newLevel < pressure.Critical && oldLevel >= pressure.Critical:
-		d.logger.Println("action: resuming helper processes")
+	case newLevel <= pressure.Normal && oldLevel >= pressure.Critical:
+		d.logger.Println("action: resuming helper processes (pressure back to normal)")
 		d.resumeHelpers()
+
+	case newLevel < pressure.Critical && oldLevel >= pressure.Critical:
+		// Stay suspended until Normal — resuming at Warning/High causes immediate re-spike
+		d.logger.Println("pressure below critical but still elevated — helpers remain suspended (use 'perf-guard restore' to resume manually)")
 
 	case newLevel < pressure.High && oldLevel >= pressure.High:
 		// VM stays stopped until manual restore — too expensive to auto-restart
@@ -233,12 +240,21 @@ func (d *Daemon) pollInterval() time.Duration {
 	case pressure.Critical:
 		return time.Duration(d.cfg.Polling.Critical) * time.Second
 	case pressure.High:
-		return time.Duration(d.cfg.Polling.Critical) * time.Second // fast polling when high too
+		return time.Duration(d.cfg.Polling.Warning) * time.Second // high is normal ops for this machine
 	case pressure.Warning:
 		return time.Duration(d.cfg.Polling.Warning) * time.Second
 	default:
 		return time.Duration(d.cfg.Polling.Normal) * time.Second
 	}
+}
+
+func (d *Daemon) hasVMStopGroup() bool {
+	for _, gc := range d.cfg.Groups {
+		if gc.Action == "vm-stop" {
+			return true
+		}
+	}
+	return false
 }
 
 func (d *Daemon) helperSubstrings() []string {
@@ -251,9 +267,9 @@ func (d *Daemon) helperSubstrings() []string {
 	return subs
 }
 
-func (d *Daemon) captureForensic(reading monitor.PressureReading) {
+func (d *Daemon) captureForensic(reading monitor.PressureReading, level string) {
 	snap, err := forensic.CaptureSnapshot(
-		d.currentLevel.String(),
+		level,
 		reading,
 		d.cfg.Forensic.CDPPort,
 		d.cfg.Forensic.FSUsage,
@@ -266,8 +282,12 @@ func (d *Daemon) captureForensic(reading monitor.PressureReading) {
 		d.logger.Printf("forensic save failed: %v", err)
 		return
 	}
-	if err := forensic.RotateSnapshots(d.cfg.Forensic.MaxKeep); err != nil {
-		d.logger.Printf("forensic rotation failed: %v", err)
+	// Skip rotation during active spike storms — snapshots captured in quick
+	// succession get evicted before anyone can read them.
+	if d.spikeDetector == nil || !d.spikeDetector.IsActive() {
+		if err := forensic.RotateSnapshots(d.cfg.Forensic.MaxKeep); err != nil {
+			d.logger.Printf("forensic rotation failed: %v", err)
+		}
 	}
 
 	d.lastSpikeMu.Lock()
@@ -280,12 +300,12 @@ func (d *Daemon) captureForensic(reading monitor.PressureReading) {
 func (d *Daemon) writeLiveStatus(reading monitor.PressureReading, helperCount int) {
 	topProcs, _ := d.mgr.TopByRSS(5)
 
-	var top []livestatus.TopProcess
+	top := make([]livestatus.TopProcess, 0, len(topProcs))
 	for _, p := range topProcs {
 		top = append(top, livestatus.TopProcess{PID: p.PID, Name: p.Name, RSSBytes: p.RSS, CPUPct: p.CPU})
 	}
 
-	var susp []livestatus.SuspendedBrief
+	susp := make([]livestatus.SuspendedBrief, 0, len(d.state.Suspended))
 	for _, s := range d.state.Suspended {
 		susp = append(susp, livestatus.SuspendedBrief{PID: s.PID, Name: s.Name})
 	}

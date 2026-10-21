@@ -6,7 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/k7lim/perf-guard/internal/config"
 	"github.com/k7lim/perf-guard/internal/forensic"
+	"github.com/k7lim/perf-guard/internal/monitor"
+	"github.com/k7lim/perf-guard/internal/process"
 	"github.com/spf13/cobra"
 )
 
@@ -38,10 +41,74 @@ func forensicsCmd() *cobra.Command {
 		Use:   "forensics",
 		Short: "Query forensic snapshots captured during memory pressure spikes",
 	}
+	cmd.AddCommand(forensicsCaptureCmd())
 	cmd.AddCommand(forensicsListCmd())
 	cmd.AddCommand(forensicsShowCmd())
 	cmd.AddCommand(forensicsReportCmd())
 	return cmd
+}
+
+func forensicsCaptureCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "capture",
+		Short: "Capture a forensic snapshot right now",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, _ := config.Load()
+
+			printer.Progress("Taking vm_stat snapshots (2s)...")
+			snap1, err := monitor.TakeSnapshot()
+			if err != nil {
+				printer.PrintError("forensics capture", err)
+				return nil
+			}
+			time.Sleep(2 * time.Second)
+			snap2, err := monitor.TakeSnapshot()
+			if err != nil {
+				printer.PrintError("forensics capture", err)
+				return nil
+			}
+
+			reading := monitor.ComputeRates(snap1, snap2)
+			mgr := process.NewManager(cfg.Protect)
+			helpers, _ := mgr.CountHelpers(helperSubstrings(cfg))
+			level := cfg.PressureThresholds().Evaluate(reading.CompressionRate, helpers)
+
+			printer.Progress("Capturing processes, tabs, IO...")
+			snapshot, err := forensic.CaptureSnapshot(
+				level.String(),
+				reading,
+				cfg.Forensic.CDPPort,
+				cfg.Forensic.FSUsage,
+			)
+			if err != nil {
+				printer.PrintError("forensics capture", err)
+				return nil
+			}
+
+			if err := forensic.SaveSnapshot(snapshot); err != nil {
+				printer.PrintError("forensics capture", err)
+				return nil
+			}
+
+			printer.Print("forensics capture", snapshot, func() {
+				fmt.Printf("Snapshot captured: %s\n", snapshot.Timestamp.Format(time.RFC3339))
+				fmt.Printf("Level: %s  Compression: %.0f pages/s\n", snapshot.Level, snapshot.CompRate)
+				fmt.Printf("Processes: %d  Tabs: %d\n", len(snapshot.Processes), len(snapshot.Tabs))
+				fmt.Printf("IO: %d read / %d write bytes (%s)\n", snapshot.IO.ReadBytes, snapshot.IO.WriteBytes, snapshot.IO.Source)
+				if len(snapshot.Processes) > 0 {
+					fmt.Println("\nTop processes by RSS:")
+					for i, p := range snapshot.Processes {
+						if i >= 5 {
+							break
+						}
+						fmt.Printf("  %d. %s — %.0f MB, %.1f%% CPU\n",
+							i+1, p.Name, float64(p.RSSBytes)/(1024*1024), p.CPUPct)
+					}
+				}
+			})
+			return nil
+		},
+	}
 }
 
 func forensicsListCmd() *cobra.Command {

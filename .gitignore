@@ -1,0 +1,6 @@
+menubar/PerfGuardMenu.app/
+menubar/perf-guard
+menubar/*.png
+.beads/embeddeddolt/
+.DS_Store
+.beads/dolt-server.lock

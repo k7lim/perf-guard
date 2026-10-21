@@ -1,15 +1,17 @@
 import AppKit
 import SwiftUI
 
-class StatusBarController {
+class StatusBarController: NSObject {
     private var statusItem: NSStatusItem
     private var popover: NSPopover
     private let model = LiveStatusModel()
     private var observation: NSKeyValueObservation?
 
-    init() {
+    override init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         popover = NSPopover()
+        super.init()
+
         popover.contentSize = NSSize(width: 320, height: 400)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(rootView: StatusView(model: model))
@@ -35,7 +37,7 @@ class StatusBarController {
 
         if !model.daemonRunning {
             color = .gray
-            rateText = ""
+            rateText = " PG"
         } else {
             switch model.level {
             case "normal":

@@ -24,6 +24,7 @@ type Snapshot struct {
 	SwapOutRate   float64                `json:"swap_out_rate"`
 	Processes     []ProcessSnapshot      `json:"processes"`
 	Tabs          []TabInfo              `json:"tabs,omitempty"`
+	TabsError     string                 `json:"tabs_error,omitempty"`
 	IO            IOStats                `json:"io"`
 	VmStat        monitor.VmStatSnapshot `json:"vmstat"`
 }
@@ -35,11 +36,15 @@ type SnapshotMeta struct {
 	CompRate     float64   `json:"compression_rate"`
 	ProcessCount int       `json:"process_count"`
 	TabCount     int       `json:"tab_count"`
+	TabsError    string    `json:"tabs_error,omitempty"`
 }
 
 // ForensicsDir returns the default forensics directory path.
 func ForensicsDir() string {
-	home, _ := os.UserHomeDir()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return filepath.Join(os.TempDir(), "perf-guard", "forensics")
+	}
 	return filepath.Join(home, ".config", "perf-guard", "forensics")
 }
 
@@ -64,6 +69,7 @@ func CaptureSnapshot(level string, reading monitor.PressureReading, cdpPort int,
 
 	tabs, err := CaptureTabs(cdpPort)
 	if err != nil {
+		snap.TabsError = err.Error()
 		log.Printf("forensic: tabs unavailable: %v", err)
 	} else {
 		snap.Tabs = tabs
@@ -72,6 +78,7 @@ func CaptureSnapshot(level string, reading monitor.PressureReading, cdpPort int,
 	io, err := CaptureIOStats(fsUsage)
 	if err != nil {
 		log.Printf("forensic: IO stats unavailable: %v", err)
+		snap.IO = IOStats{Source: "error"}
 	} else {
 		snap.IO = io
 	}
@@ -145,8 +152,14 @@ func RotateSnapshotsIn(dir string, maxKeep int) error {
 	}
 
 	toDelete := jsonFiles[:len(jsonFiles)-maxKeep]
+	var errs []string
 	for _, f := range toDelete {
-		os.Remove(filepath.Join(dir, f))
+		if err := os.Remove(filepath.Join(dir, f)); err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("rotation: failed to delete %d/%d files: %s", len(errs), len(toDelete), strings.Join(errs, "; "))
 	}
 	return nil
 }
@@ -186,13 +199,18 @@ func ListSnapshotsFrom(dir string, limit, offset int) ([]SnapshotMeta, int, erro
 	}
 
 	var metas []SnapshotMeta
+	var skipped int
 	for _, f := range jsonFiles {
 		data, err := os.ReadFile(filepath.Join(dir, f))
 		if err != nil {
+			skipped++
+			log.Printf("forensic: skipping unreadable snapshot %s: %v", f, err)
 			continue
 		}
 		var snap Snapshot
 		if err := json.Unmarshal(data, &snap); err != nil {
+			skipped++
+			log.Printf("forensic: skipping corrupt snapshot %s: %v", f, err)
 			continue
 		}
 		metas = append(metas, SnapshotMeta{
@@ -201,6 +219,7 @@ func ListSnapshotsFrom(dir string, limit, offset int) ([]SnapshotMeta, int, erro
 			CompRate:     snap.CompRate,
 			ProcessCount: len(snap.Processes),
 			TabCount:     len(snap.Tabs),
+			TabsError:    snap.TabsError,
 		})
 	}
 	return metas, total, nil

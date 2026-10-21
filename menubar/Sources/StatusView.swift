@@ -111,6 +111,42 @@ struct StatusView: View {
 
             Divider()
 
+            // Daemon toggle
+            Button(action: {
+                if model.daemonPid != nil {
+                    model.stopDaemon()
+                } else {
+                    model.startDaemon()
+                }
+            }) {
+                HStack {
+                    Image(systemName: model.daemonPid != nil ? "stop.circle.fill" : "play.circle.fill")
+                    Text(model.daemonPid != nil ? "Stop Daemon" : "Start Daemon")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .controlSize(.large)
+
+            // Capture button — the main action
+            Button(action: { model.captureSnapshot() }) {
+                HStack {
+                    Image(systemName: model.capturing ? "hourglass" : "camera.fill")
+                    Text(model.capturing ? "Capturing..." : "Capture Snapshot")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .disabled(model.capturing)
+            .controlSize(.large)
+            .keyboardShortcut("s", modifiers: .command)
+
+            if let result = model.lastCaptureResult {
+                Text(result)
+                    .font(.caption)
+                    .foregroundColor(result.hasPrefix("Error") || result.hasPrefix("Capture failed") ? .red : .green)
+            }
+
+            Divider()
+
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }

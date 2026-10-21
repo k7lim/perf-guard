@@ -92,6 +92,18 @@ Installs perf-guard as a LaunchAgent so the daemon starts on login and auto-rest
 perf-guard install --dry-run --output json
 ```
 
+### forensics capture (mutates, creates snapshot file)
+
+Manual forensic capture. Run this the moment something freezes — it grabs vm_stat rates, top 30 processes, open browser tabs (via CDP), and disk IO. Takes ~2 seconds (two vm_stat samples).
+
+```bash
+perf-guard forensics capture --output json
+```
+
+The snapshot is saved to `~/.config/perf-guard/forensics/` and immediately queryable via `forensics show`.
+
+## Sensors (read-only)
+
 ### forensics list (read-only)
 
 Paginated list of forensic snapshots.

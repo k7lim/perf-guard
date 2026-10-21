@@ -13,11 +13,17 @@ const samplePS = `  PID   RSS   VSZ  %CPU %MEM COMM
 `
 
 func TestParseProcessSnapshot(t *testing.T) {
-	results := parseProcessSnapshot(samplePS, 10)
+	results, parseErrs, totalLines := parseProcessSnapshot(samplePS, 10)
 
-	// kernel_task (PID 0) should be skipped
+	// kernel_task (PID 0) should be skipped (counted as parse error)
 	if len(results) != 4 {
 		t.Fatalf("got %d results, want 4", len(results))
+	}
+	if parseErrs != 1 { // PID 0
+		t.Errorf("parseErrs = %d, want 1", parseErrs)
+	}
+	if totalLines != 5 {
+		t.Errorf("totalLines = %d, want 5", totalLines)
 	}
 
 	// Should be sorted by RSS descending
@@ -50,7 +56,7 @@ func TestParseProcessSnapshot(t *testing.T) {
 }
 
 func TestParseProcessSnapshot_Limit(t *testing.T) {
-	results := parseProcessSnapshot(samplePS, 2)
+	results, _, _ := parseProcessSnapshot(samplePS, 2)
 	if len(results) != 2 {
 		t.Fatalf("got %d results, want 2", len(results))
 	}
@@ -61,7 +67,7 @@ func TestParseProcessSnapshot_Limit(t *testing.T) {
 }
 
 func TestParseProcessSnapshot_Empty(t *testing.T) {
-	results := parseProcessSnapshot("", 10)
+	results, _, _ := parseProcessSnapshot("", 10)
 	if len(results) != 0 {
 		t.Errorf("got %d results for empty input, want 0", len(results))
 	}

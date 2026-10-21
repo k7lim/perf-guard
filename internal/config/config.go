@@ -70,10 +70,9 @@ func Default() Config {
 			"sshd", "Spotlight", "iTerm2", "Terminal",
 		},
 		Groups: map[string]GroupConfig{
-			"lima":   {Match: "lima", Action: "vm-stop", Priority: 0},
-			"brave":  {Match: "Brave Browser Helper", Action: "suspend", Priority: 1},
+			"brave":   {Match: "Brave Browser Helper", Action: "suspend", Priority: 1},
 			"firefox": {Match: "firefox", Action: "suspend", Priority: 2},
-			"vscode": {Match: "Code Helper", Action: "suspend", Priority: 3},
+			"vscode":  {Match: "Code Helper", Action: "suspend", Priority: 3},
 		},
 		LogPath: "/tmp/perf-guard.log",
 		Forensic: ForensicConfig{
