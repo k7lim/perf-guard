@@ -4,3 +4,9 @@ menubar/*.png
 .beads/embeddeddolt/
 .DS_Store
 .beads/dolt-server.lock
+.claude/
+.codex/
+/perf-guard
+*.sample.txt
+*.trace.txt
+*.log

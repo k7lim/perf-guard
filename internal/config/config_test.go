@@ -28,6 +28,20 @@ func TestDefaultForensicConfig(t *testing.T) {
 	}
 }
 
+func TestMonitorOnlyConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, []byte("monitor_only = true\nprotect = [\"custom-protected-app\"]\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.MonitorOnly || len(cfg.Protect) != 1 || cfg.Protect[0] != "custom-protected-app" {
+		t.Fatalf("config overlay lost: %#v", cfg)
+	}
+}
+
 func TestValidateForensicRejects(t *testing.T) {
 	tests := []struct {
 		name string

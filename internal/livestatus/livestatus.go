@@ -9,6 +9,8 @@ import (
 
 // LiveStatus mirrors contracts/live-status.json.
 type LiveStatus struct {
+	MonitorOnly     bool             `json:"monitor_only"`
+	DiscoveryError  string           `json:"discovery_error,omitempty"`
 	SchemaVersion   int              `json:"schema_version"`
 	Level           string           `json:"level"`
 	CompressionRate float64          `json:"compression_rate"`

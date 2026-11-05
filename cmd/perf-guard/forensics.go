@@ -70,7 +70,10 @@ func forensicsCaptureCmd() *cobra.Command {
 
 			reading := monitor.ComputeRates(snap1, snap2)
 			mgr := process.NewManager(cfg.Protect)
-			helpers, _ := mgr.CountHelpers(helperSubstrings(cfg))
+			helpers, err := mgr.CountHelpers(helperSubstrings(cfg))
+			if err != nil {
+				return fmt.Errorf("process discovery unavailable: %w", err)
+			}
 			level := cfg.PressureThresholds().Evaluate(reading.CompressionRate, helpers)
 
 			printer.Progress("Capturing processes, tabs, IO...")

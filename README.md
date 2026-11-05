@@ -10,8 +10,9 @@ Built for an M4 Pro with 48 GB RAM that was drowning in memory compression thras
 go build -o perf-guard ./cmd/perf-guard/
 cp perf-guard /usr/local/bin/
 
-# Optional: run as a LaunchAgent (starts on login, auto-restarts)
-perf-guard install
+# Recommended first run: monitor, alert and capture diagnostics only
+perf-guard install --monitor-only --dry-run
+perf-guard install --monitor-only
 ```
 
 ## Usage
@@ -55,19 +56,21 @@ perf-guard restore            # resume all
 ### Background daemon
 
 ```bash
-perf-guard daemon   # runs in foreground, logs to /tmp/perf-guard.log
+perf-guard daemon --monitor-only   # foreground monitoring and alerts, no process actions
 
 # Or install as LaunchAgent:
-perf-guard install
+perf-guard install --monitor-only
 ```
 
-The daemon monitors continuously with adaptive polling (30s idle, 5s warning, 1s critical) and takes graduated actions:
+With `--monitor-only`, the daemon logs pressure changes, posts macOS notifications, writes a heartbeat, and captures forensic snapshots. It never suspends/resumes processes or stops/starts VMs. The mode persists in the LaunchAgent arguments.
+
+Without monitor-only, the daemon monitors continuously with adaptive polling (30s idle, 5s warning, 1s critical) and takes graduated actions:
 
 | Level | Trigger | Action |
 |-------|---------|--------|
 | Warning | >500 pages/s compressed | macOS notification |
 | High | >1000 pages/s compressed | Stop Lima VM |
-| Critical | >2000 pages/s OR >150 helpers | SIGSTOP browser + editor helpers |
+| Critical | ≥2000 pages/s; helper count ≥150 raises the compression-based level by one | SIGSTOP browser + editor helpers |
 
 Hysteresis prevents flapping: 3 consecutive readings below threshold before downgrading.
 
@@ -132,7 +135,7 @@ Process matching is deliberately simple: substring match, not regex. This avoids
 
 ## Machine-readable output
 
-Every command supports `--output json` for agent and script consumption. Output auto-detects: JSON when piped, text in a terminal. Set `OUTPUT_FORMAT=json` to always get JSON.
+CLI sensors and actuators support `--output json`; daemon runtime events go to its log. Every interactive command supports `--output json` for agent and script consumption. Output auto-detects: JSON when piped, text in a terminal. Set `OUTPUT_FORMAT=json` to always get JSON.
 
 ```bash
 # Structured status
@@ -153,9 +156,62 @@ Key decisions informed by studying earlyoom (3.9K stars) and nohang (1.2K stars)
 
 - **SIGSTOP, not kill.** nohang's kill-based approach caused 10-30 minute system freezes. SIGSTOP is reversible.
 - **Adaptive polling.** Fixed 10Hz polling was earlyoom's most discussed issue. We poll every 30s when idle, 1s under pressure.
-- **Warn before acting.** earlyoom's #1 open feature request. The daemon notifies at Warning level before taking action at High/Critical.
+- **Pressure notifications.** The daemon notifies on upward pressure changes, including jumps straight to Critical. Monitor-only mode keeps notifications without automatic actions.
 - **Substring match, not regex.** nohang's regex config caused users to accidentally match and kill their desktop environment.
 - **Per-PID signals, not process groups.** earlyoom's process group signaling caused a signal storm bug.
 - **Hysteresis.** 3 consecutive readings below threshold to downgrade. Prevents notification spam and suspend/resume oscillation.
 
 See [DIAGNOSTIC-REPORT.md](DIAGNOSTIC-REPORT.md) for the full system analysis that motivated this tool.
+
+## Agent process inventory
+
+```bash
+perf-guard sessions --output json --limit 20 --offset 0
+perf-guard status --output json --fields level,compression_rate,compressor_gb,browser_helpers,daemon
+```
+
+`sessions` separates terminal sessions, nested terminal helpers, desktop helpers,
+app servers, and other background agent processes. It reports PID, parent, TTY,
+age, and resident memory without reading command arguments or terminating anything.
+Age is not inactivity; resident memory excludes compressed and swapped pages.
+There is no automatic session reaper.
+
+`compressor_gb` is the physical GiB occupied by the compressor, not the size of
+original pages stored inside it. `daemon.stale` flags a heartbeat older than
+90 seconds; `daemon: null` means no readable heartbeat. A heartbeat does not
+prove notification delivery. Process-discovery failures produce an error rather
+than a misleading zero helper count. If an agent sandbox blocks `ps`, run the
+read-only sensor with host process visibility.
+
+## Installed service
+
+- **Name:** Performance Guard - Monitor; user LaunchAgent `com.user.perf-guard`.
+- **Owner/installer:** this repository, `perf-guard install --monitor-only`.
+- **Executable:** `~/Library/Application Support/perf-guard/bin/perf-guard`.
+- **Launcher:** sibling executable `Performance Guard - Monitor`.
+- **CLI:** `~/.local/bin/perf-guard` forwards arguments to the installed binary.
+  Ensure `~/.local/bin` precedes any older installation on PATH.
+- **Plist:** `~/Library/LaunchAgents/com.user.perf-guard.plist`.
+- **Schedule:** starts at login; launchd restarts it if it exits. Polling is 30s
+  at normal pressure, 5s warning/high, and 1s critical.
+- **Data:** `~/.config/perf-guard/live-status.json`, `state.json`, and `forensics/`.
+  Log: `/tmp/perf-guard.log`. No root privileges are required.
+- **Disable impact:** continuous monitoring, pressure notifications, heartbeat,
+  and automatic forensic capture stop; manual CLI sensors remain available.
+- **Check:** `launchctl print gui/$(id -u)/com.user.perf-guard`, then check fresh
+  `status` telemetry and the log. `launchctl print-disabled gui/$(id -u)` shows
+  the explicit disabled override independently of loaded/running state.
+- **Disable:** `launchctl bootout gui/$(id -u)/com.user.perf-guard`, then
+  `launchctl disable gui/$(id -u)/com.user.perf-guard`.
+- **Restore:** preview and run `perf-guard install --monitor-only` again.
+  Upgrades preserve existing plist settings, including log destinations.
+- **Rollback:** each install prints a timestamped backup under
+  `~/Library/Application Support/perf-guard/backups/`. It saves the original
+  plist and replaced payload/launchers. Stop the service before restoring those
+  files. The installer explicitly enables the service, including a previously
+  disabled one. Its returned `loaded` field indicates successful bootstrap;
+  verify the next heartbeat to confirm useful operation.
+
+Browser tab capture is best-effort and requires a compatible local CDP endpoint.
+Other forensic data still works if CDP is unavailable. Runtime snapshots can
+contain private process paths, URLs, and tab titles; keep them out of Git.

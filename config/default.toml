@@ -1,6 +1,14 @@
 # perf-guard default configuration
 # Copy to ~/.config/perf-guard/config.toml to customize
 
+monitor_only = false # use true to keep monitoring/alerts without process actions
+
+# Processes to NEVER touch (substring match)
+protect = [
+    "Finder", "loginwindow", "WindowServer",
+    "sshd", "Spotlight", "iTerm2", "Terminal",
+]
+
 [polling]
 normal = 30      # seconds between checks when idle
 warning = 5      # when pressure rising
@@ -11,12 +19,6 @@ warning = 500    # pages/s compressed → notify
 high = 1000      # pages/s compressed → stop VM
 critical = 2000  # pages/s compressed → SIGSTOP helpers
 max_helpers = 150 # browser helper count → SIGSTOP
-
-# Processes to NEVER touch (substring match)
-protect = [
-    "Finder", "loginwindow", "WindowServer",
-    "sshd", "Spotlight", "iTerm2", "Terminal",
-]
 
 [groups.lima]
 match = "lima"

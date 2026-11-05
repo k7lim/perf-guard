@@ -11,12 +11,13 @@ import (
 
 // Config is the top-level configuration.
 type Config struct {
-	Polling    PollingConfig          `toml:"polling"`
-	Thresholds ThresholdConfig       `toml:"thresholds"`
-	Protect    []string              `toml:"protect"`
-	Groups     map[string]GroupConfig `toml:"groups"`
-	LogPath    string                `toml:"log_path"`
-	Forensic   ForensicConfig        `toml:"forensic"`
+	MonitorOnly bool                   `toml:"monitor_only"`
+	Polling     PollingConfig          `toml:"polling"`
+	Thresholds  ThresholdConfig        `toml:"thresholds"`
+	Protect     []string               `toml:"protect"`
+	Groups      map[string]GroupConfig `toml:"groups"`
+	LogPath     string                 `toml:"log_path"`
+	Forensic    ForensicConfig         `toml:"forensic"`
 }
 
 // ForensicConfig controls forensic spike capture behavior.

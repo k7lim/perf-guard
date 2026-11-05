@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/k7lim/perf-guard/internal/config"
 	"github.com/k7lim/perf-guard/internal/daemon"
+	"github.com/k7lim/perf-guard/internal/livestatus"
 	"github.com/k7lim/perf-guard/internal/monitor"
 	"github.com/k7lim/perf-guard/internal/output"
 	"github.com/k7lim/perf-guard/internal/process"
@@ -21,17 +20,21 @@ import (
 )
 
 var (
-	outputFlag string
-	fieldsFlag []string
-	dryRunFlag bool
-	printer    *output.Printer
+	outputFlag  string
+	fieldsFlag  []string
+	dryRunFlag  bool
+	printer     *output.Printer
+	commandName string
 )
 
 func main() {
 	root := &cobra.Command{
-		Use:   "perf-guard",
-		Short: "macOS memory pressure monitor and process manager",
+		Use:           "perf-guard",
+		Short:         "macOS memory pressure monitor and process manager",
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			commandName = strings.TrimPrefix(cmd.CommandPath(), "perf-guard ")
 			format := output.ResolveFormat(outputFlag)
 			printer = output.NewPrinter(format, fieldsFlag)
 			return nil
@@ -48,10 +51,16 @@ func main() {
 	root.AddCommand(suspendCmd())
 	root.AddCommand(daemonCmd())
 	root.AddCommand(installCmd())
+	root.AddCommand(sessionsCmd())
 	root.AddCommand(forensicsCmd())
 	root.AddCommand(describeCmd())
 
 	if err := root.Execute(); err != nil {
+		if printer != nil {
+			printer.PrintError(commandName, err)
+		} else {
+			fmt.Fprintln(os.Stderr, err)
+		}
 		os.Exit(1)
 	}
 }
@@ -65,7 +74,10 @@ func statusCmd() *cobra.Command {
 		Use:   "status",
 		Short: "Show current memory pressure and process stats",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, _ := config.Load()
+			cfg, err := config.Load()
+			if err != nil {
+				return err
+			}
 			th := cfg.PressureThresholds()
 
 			printer.Progress("Taking snapshots...")
@@ -81,7 +93,10 @@ func statusCmd() *cobra.Command {
 
 			reading := monitor.ComputeRates(snap1, snap2)
 			mgr := process.NewManager(cfg.Protect)
-			helpers, _ := mgr.CountHelpers(helperSubstrings(cfg))
+			helpers, err := mgr.CountHelpers(helperSubstrings(cfg))
+			if err != nil {
+				return fmt.Errorf("process discovery unavailable: %w", err)
+			}
 			level := th.Evaluate(reading.CompressionRate, helpers)
 
 			st, _ := state.Load()
@@ -103,7 +118,7 @@ func statusCmd() *cobra.Command {
 				SwapInRate:        reading.SwapInRate,
 				SwapOutRate:       reading.SwapOutRate,
 				PagesInCompressor: snap2.PagesCompressor,
-				CompressorGB:      float64(snap2.PagesCompressor*snap2.PageSize) / (1024 * 1024 * 1024),
+				CompressorGB:      float64(snap2.CompressorOccupied*snap2.PageSize) / (1024 * 1024 * 1024),
 				TotalCompressions: snap2.Compressions,
 				TotalSwapins:      snap2.Swapins,
 				TotalSwapouts:     snap2.Swapouts,
@@ -115,6 +130,12 @@ func statusCmd() *cobra.Command {
 				Suspended: suspended,
 				VMStopped: st.VMStopped,
 			}
+			if live, err := livestatus.Read(); err == nil {
+				if updated, err := time.Parse(time.RFC3339, live.UpdatedAt); err == nil {
+					age := time.Since(updated).Seconds()
+					result.Daemon = &output.DaemonInfo{MonitorOnly: live.MonitorOnly, UpdatedAt: live.UpdatedAt, HeartbeatAgeSeconds: age, Stale: age > 90, DiscoveryError: live.DiscoveryError}
+				}
+			}
 
 			printer.Print("status", result, func() {
 				fmt.Println()
@@ -125,7 +146,7 @@ func statusCmd() *cobra.Command {
 				fmt.Printf("Swap in rate:      %.0f pages/s\n", reading.SwapInRate)
 				fmt.Printf("Swap out rate:     %.0f pages/s\n", reading.SwapOutRate)
 				fmt.Println()
-				fmt.Printf("Pages in compressor: %d (%.1f GB)\n",
+				fmt.Printf("Pages stored in compressor: %d (occupies %.1f GiB RAM)\n",
 					snap2.PagesCompressor, result.CompressorGB)
 				fmt.Printf("Total compressions:  %d\n", snap2.Compressions)
 				fmt.Printf("Total swapins:       %d\n", snap2.Swapins)
@@ -468,100 +489,29 @@ func suspendCmd() *cobra.Command {
 // ---------------------------------------------------------------------------
 
 func daemonCmd() *cobra.Command {
-	return &cobra.Command{
+	var monitorOnly bool
+	cmd := &cobra.Command{
 		Use:   "daemon",
 		Short: "Run as a background monitor daemon",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, _ := config.Load()
-			d := daemon.New(cfg)
-			return d.Run()
-		},
-	}
-}
-
-// ---------------------------------------------------------------------------
-// install
-// ---------------------------------------------------------------------------
-
-func installCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "install",
-		Short: "Install perf-guard as a LaunchAgent (starts on login)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			binPath, err := os.Executable()
+			cfg, err := config.Load()
 			if err != nil {
-				return fmt.Errorf("finding executable: %w", err)
+				return err
 			}
-			binPath, _ = filepath.EvalSymlinks(binPath)
-
-			home, _ := os.UserHomeDir()
-			plistPath := filepath.Join(home, "Library", "LaunchAgents", "com.user.perf-guard.plist")
-
+			if cmd.Flags().Changed("monitor-only") {
+				cfg.MonitorOnly = monitorOnly
+			}
 			if dryRunFlag {
-				result := output.InstallResult{
-					PlistPath: plistPath, BinaryPath: binPath, Loaded: false, DryRun: true,
-				}
-				printer.Print("install", result, func() {
-					fmt.Printf("[dry-run] Would write %s\n", plistPath)
-					fmt.Printf("[dry-run] Binary: %s\n", binPath)
+				printer.Print("daemon", map[string]any{"dry_run": true, "monitor_only": cfg.MonitorOnly, "log_path": cfg.LogPath}, func() {
+					fmt.Printf("[dry-run] Start daemon (monitor_only=%t), log: %s\n", cfg.MonitorOnly, cfg.LogPath)
 				})
 				return nil
 			}
-
-			plist := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.user.perf-guard</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>%s</string>
-        <string>daemon</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/tmp/perf-guard.log</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/perf-guard.log</string>
-    <key>ProcessType</key>
-    <string>Background</string>
-</dict>
-</plist>
-`, binPath)
-
-			exec.Command("launchctl", "unload", plistPath).Run()
-			if err := os.MkdirAll(filepath.Dir(plistPath), 0755); err != nil {
-				return err
-			}
-			if err := os.WriteFile(plistPath, []byte(plist), 0644); err != nil {
-				return err
-			}
-
-			loaded := false
-			if err := exec.Command("launchctl", "load", plistPath).Run(); err != nil {
-				log.Printf("warning: launchctl load: %v", err)
-			} else {
-				loaded = true
-			}
-
-			result := output.InstallResult{
-				PlistPath: plistPath, BinaryPath: binPath, Loaded: loaded, DryRun: false,
-			}
-			printer.Print("install", result, func() {
-				fmt.Printf("Wrote %s\n", plistPath)
-				fmt.Printf("Binary: %s\n", binPath)
-				if loaded {
-					fmt.Println("LaunchAgent loaded. perf-guard daemon is now running.")
-				}
-				fmt.Println("To uninstall: launchctl unload " + plistPath)
-			})
-			return nil
+			return daemon.New(cfg).Run()
 		},
 	}
+	cmd.Flags().BoolVar(&monitorOnly, "monitor-only", false, "Monitor, notify and capture diagnostics without managing processes or VMs")
+	return cmd
 }
 
 // ---------------------------------------------------------------------------

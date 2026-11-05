@@ -26,17 +26,18 @@ const hysteresisCount = 3 // consecutive readings below threshold to downgrade
 
 // Daemon is the main monitor loop.
 type Daemon struct {
-	cfg           config.Config
-	mgr           *process.Manager
-	thresholds    pressure.Thresholds
-	currentLevel  pressure.Level
-	belowCount    int // consecutive readings below current level
-	lastSnapshot  *monitor.VmStatSnapshot
-	state         state.State
-	logger        *log.Logger
-	spikeDetector *forensic.SpikeDetector
-	lastSpikeMu   sync.Mutex
-	lastSpikeTime time.Time
+	cfg            config.Config
+	mgr            *process.Manager
+	thresholds     pressure.Thresholds
+	currentLevel   pressure.Level
+	belowCount     int // consecutive readings below current level
+	lastSnapshot   *monitor.VmStatSnapshot
+	state          state.State
+	logger         *log.Logger
+	spikeDetector  *forensic.SpikeDetector
+	lastSpikeMu    sync.Mutex
+	lastSpikeTime  time.Time
+	discoveryError string
 }
 
 // New creates a new Daemon with the given config.
@@ -78,7 +79,7 @@ func (d *Daemon) Run() error {
 		}
 	}
 
-	d.logger.Println("daemon starting")
+	d.logger.Printf("daemon starting (monitor_only=%t)", d.cfg.MonitorOnly)
 
 	// Handle graceful shutdown
 	sigCh := make(chan os.Signal, 1)
@@ -111,11 +112,21 @@ func (d *Daemon) Run() error {
 		d.lastSnapshot = &snap
 
 		helperSubs := d.helperSubstrings()
-		helpers, _ := d.mgr.CountHelpers(helperSubs)
+		helpers, err := d.mgr.CountHelpers(helperSubs)
+		if err != nil {
+			d.discoveryError = err.Error()
+			d.logger.Printf("process discovery failed: %v", err)
+			// Unknown is not zero: publish degraded telemetry and avoid actions.
+			d.writeLiveStatus(reading, -1)
+			continue
+		}
+		d.discoveryError = ""
 
 		newLevel := d.thresholds.Evaluate(reading.CompressionRate, helpers)
 
-		if d.spikeDetector != nil && d.spikeDetector.Record(reading.CompressionRate) {
+		spike := d.spikeDetector != nil && d.spikeDetector.Record(reading.CompressionRate)
+		// Capture already-high pressure on startup as well as later relative spikes.
+		if d.spikeDetector != nil && (spike || (d.currentLevel == pressure.Normal && newLevel >= pressure.High)) {
 			captureLevel := newLevel.String()
 			go d.captureForensic(reading, captureLevel)
 		}
@@ -126,6 +137,15 @@ func (d *Daemon) Run() error {
 		if effectiveLevel != d.currentLevel {
 			d.logger.Printf("level change: %s → %s (rate=%.0f pages/s, helpers=%d)",
 				d.currentLevel, effectiveLevel, reading.CompressionRate, helpers)
+			if effectiveLevel >= pressure.Warning {
+				message := fmt.Sprintf("%s pressure: %.0f pages/sec compressed; %d helpers. Monitor only: %t.",
+					effectiveLevel, reading.CompressionRate, helpers, d.cfg.MonitorOnly)
+				go func() {
+					if err := notify(message); err != nil {
+						d.logger.Printf("notification failed: %v", err)
+					}
+				}()
+			}
 			d.act(effectiveLevel, d.currentLevel)
 			d.currentLevel = effectiveLevel
 		}
@@ -150,12 +170,9 @@ func (d *Daemon) applyHysteresis(newLevel pressure.Level) pressure.Level {
 }
 
 func (d *Daemon) act(newLevel, oldLevel pressure.Level) {
-	switch {
-	case newLevel >= pressure.Warning && oldLevel < pressure.Warning:
-		d.logger.Println("action: pressure rising to warning level")
-
-	case newLevel >= pressure.High && oldLevel < pressure.High:
-		if d.hasVMStopGroup() {
+	for _, action := range d.plannedActions(newLevel, oldLevel) {
+		switch action {
+		case "vm-stop":
 			d.logger.Println("action: stopping Lima VM")
 			vc := vm.NewController()
 			if err := vc.Stop(); err != nil {
@@ -164,24 +181,33 @@ func (d *Daemon) act(newLevel, oldLevel pressure.Level) {
 				d.state.VMStopped = true
 				d.state.Save()
 			}
+		case "suspend":
+			d.logger.Println("action: suspending helper processes")
+			d.suspendHelpers()
+		case "resume":
+			d.logger.Println("action: resuming helper processes (pressure back to normal)")
+			d.resumeHelpers()
 		}
-
-	case newLevel >= pressure.Critical && oldLevel < pressure.Critical:
-		d.logger.Println("action: suspending helper processes")
-		d.suspendHelpers()
-
-	case newLevel <= pressure.Normal && oldLevel >= pressure.Critical:
-		d.logger.Println("action: resuming helper processes (pressure back to normal)")
-		d.resumeHelpers()
-
-	case newLevel < pressure.Critical && oldLevel >= pressure.Critical:
-		// Stay suspended until Normal — resuming at Warning/High causes immediate re-spike
-		d.logger.Println("pressure below critical but still elevated — helpers remain suspended (use 'perf-guard restore' to resume manually)")
-
-	case newLevel < pressure.High && oldLevel >= pressure.High:
-		// VM stays stopped until manual restore — too expensive to auto-restart
-		d.logger.Println("pressure below high — VM remains stopped (use 'perf-guard restore' to restart)")
 	}
+}
+
+// Each crossed escalation boundary must run, including Normal -> Critical.
+// Recovery uses tracked state so Critical -> High -> Normal also resumes helpers.
+func (d *Daemon) plannedActions(newLevel, oldLevel pressure.Level) []string {
+	if d.cfg.MonitorOnly {
+		return nil
+	}
+	var actions []string
+	if newLevel >= pressure.High && oldLevel < pressure.High && d.hasVMStopGroup() {
+		actions = append(actions, "vm-stop")
+	}
+	if newLevel >= pressure.Critical && oldLevel < pressure.Critical {
+		actions = append(actions, "suspend")
+	}
+	if newLevel == pressure.Normal && len(d.state.Suspended) > 0 {
+		actions = append(actions, "resume")
+	}
+	return actions
 }
 
 func (d *Daemon) suspendHelpers() {
@@ -311,6 +337,8 @@ func (d *Daemon) writeLiveStatus(reading monitor.PressureReading, helperCount in
 	}
 
 	status := &livestatus.LiveStatus{
+		MonitorOnly:     d.cfg.MonitorOnly,
+		DiscoveryError:  d.discoveryError,
 		Level:           d.currentLevel.String(),
 		CompressionRate: reading.CompressionRate,
 		HelperCount:     helperCount,

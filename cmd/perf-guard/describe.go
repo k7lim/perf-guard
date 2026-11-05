@@ -19,15 +19,15 @@ type schema struct {
 }
 
 type commandSchema struct {
-	Description    string              `json:"description"`
-	Flags          map[string]flagInfo `json:"flags,omitempty"`
-	OutputSchema   map[string]string   `json:"output_schema,omitempty"`
-	AvailableFields []string           `json:"available_fields,omitempty"`
-	Mutates        bool                `json:"mutates,omitempty"`
-	Reversible     bool                `json:"reversible,omitempty"`
-	ReverseCommand string              `json:"reverse_command,omitempty"`
-	Subcommands    map[string]commandSchema `json:"subcommands,omitempty"`
-	Notes          []string            `json:"notes,omitempty"`
+	Description     string                   `json:"description"`
+	Flags           map[string]flagInfo      `json:"flags,omitempty"`
+	OutputSchema    map[string]string        `json:"output_schema,omitempty"`
+	AvailableFields []string                 `json:"available_fields,omitempty"`
+	Mutates         bool                     `json:"mutates,omitempty"`
+	Reversible      bool                     `json:"reversible,omitempty"`
+	ReverseCommand  string                   `json:"reverse_command,omitempty"`
+	Subcommands     map[string]commandSchema `json:"subcommands,omitempty"`
+	Notes           []string                 `json:"notes,omitempty"`
 }
 
 type flagInfo struct {
@@ -44,7 +44,7 @@ func describeCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			s := schema{
 				Name:        "perf-guard",
-				Version:     "0.1.0",
+				Version:     "0.2.0",
 				Description: "macOS memory pressure monitor and process manager",
 				EnvVars: map[string]string{
 					"OUTPUT_FORMAT": "json|text — override output format for all commands",
@@ -60,20 +60,21 @@ func describeCmd() *cobra.Command {
 						},
 						AvailableFields: output.StatusFields,
 						OutputSchema: map[string]string{
+							"daemon":              "{monitor_only, updated_at, heartbeat_age_seconds, stale, discovery_error?} or null when no heartbeat is available",
 							"level":               "string (normal|warning|high|critical)",
-							"compression_rate":     "float64 (pages/sec)",
-							"decompression_rate":   "float64 (pages/sec)",
-							"swap_in_rate":         "float64 (pages/sec)",
-							"swap_out_rate":        "float64 (pages/sec)",
-							"pages_in_compressor":  "uint64",
-							"compressor_gb":        "float64",
-							"total_compressions":   "uint64",
-							"total_swapins":        "uint64",
-							"total_swapouts":       "uint64",
-							"browser_helpers":      "int",
-							"thresholds":           "{warning, high, critical, max_helpers}",
-							"suspended":            "[{pid, name, group, suspended_at}]",
-							"vm_stopped":           "bool",
+							"compression_rate":    "float64 (pages/sec)",
+							"decompression_rate":  "float64 (pages/sec)",
+							"swap_in_rate":        "float64 (pages/sec)",
+							"swap_out_rate":       "float64 (pages/sec)",
+							"pages_in_compressor": "uint64",
+							"compressor_gb":       "float64 (physical GiB occupied by compressor)",
+							"total_compressions":  "uint64",
+							"total_swapins":       "uint64",
+							"total_swapouts":      "uint64",
+							"browser_helpers":     "int",
+							"thresholds":          "{warning, high, critical, max_helpers}",
+							"suspended":           "[{pid, name, group, suspended_at}]",
+							"vm_stopped":          "bool",
 						},
 						Notes: []string{"Takes ~2s (two vm_stat snapshots required)"},
 					},
@@ -111,15 +112,15 @@ func describeCmd() *cobra.Command {
 						Description: "Suspend a specific group",
 						Subcommands: map[string]commandSchema{
 							"vm": {
-								Description: "Stop Lima VM via limactl",
-								Mutates:     true,
-								Reversible:  true,
+								Description:    "Stop Lima VM via limactl",
+								Mutates:        true,
+								Reversible:     true,
 								ReverseCommand: "restore",
 							},
 							"browsers": {
-								Description: "SIGSTOP all browser helper processes",
-								Mutates:     true,
-								Reversible:  true,
+								Description:    "SIGSTOP all browser helper processes",
+								Mutates:        true,
+								Reversible:     true,
 								ReverseCommand: "restore",
 							},
 						},
@@ -172,10 +173,10 @@ func describeCmd() *cobra.Command {
 									"--days": {Type: "int", Default: "7", Description: "Number of days to analyze"},
 								},
 								OutputSchema: map[string]string{
-									"total_spikes":            "int",
-									"most_frequent_processes": "[{name, count}]",
-									"most_frequent_urls":      "[{name, count}]",
-									"spikes_by_hour":          "[24]int",
+									"total_spikes":             "int",
+									"most_frequent_processes":  "[{name, count}]",
+									"most_frequent_urls":       "[{name, count}]",
+									"spikes_by_hour":           "[24]int",
 									"avg_compression_at_spike": "float64",
 								},
 							},
@@ -185,13 +186,31 @@ func describeCmd() *cobra.Command {
 						Description: "Show command metadata and output schemas (always JSON)",
 					},
 					"daemon": {
-						Description: "Run as a background monitor daemon (not for agent use)",
-						Notes:       []string{"Writes to log file, not stdout. Not agent-invocable."},
+						Description: "Background monitoring, notifications and optional pressure actions",
+						Flags: map[string]flagInfo{
+							"--monitor-only": {Type: "bool", Description: "Disable automatic process and VM actions; keep monitoring, notifications and forensic capture"},
+							"--dry-run":      {Type: "bool", Description: "Preview daemon mode and log path without starting"},
+						},
+						Notes: []string{"Use install for persistent operation. Writes to log file, not stdout."},
+					},
+					"sessions": {
+						Description: "Read-only inventory separating terminal agent sessions from desktop helpers and app servers",
+						Flags: map[string]flagInfo{
+							"--limit":  {Type: "int", Default: "20", Description: "Maximum entries"},
+							"--offset": {Type: "int", Default: "0", Description: "Inventory offset"},
+						},
+						OutputSchema: map[string]string{
+							"items":          "[{pid, parent_pid, agent, kind, tty, age_seconds, rss_bytes}]",
+							"counts_by_kind": "{terminal?, terminal_helper?, desktop_helper?, app_server?, background?}",
+							"total":          "int", "limit": "int", "offset": "int", "rss_bytes": "uint64 (resident memory only)",
+						},
+						Notes: []string{"Age is not inactivity. No termination or reaper is performed."},
 					},
 					"install": {
 						Description: "Install as LaunchAgent (starts on login)",
 						Flags: map[string]flagInfo{
-							"--dry-run": {Type: "bool", Default: "false", Description: "Show install paths without writing"},
+							"--dry-run":      {Type: "bool", Default: "false", Description: "Show install paths without writing"},
+							"--monitor-only": {Type: "bool", Description: "Persist monitor-only operation across login and restarts"},
 						},
 						Mutates: true,
 					},
