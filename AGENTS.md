@@ -1,8 +1,17 @@
 # perf-guard -- Agent Integration
 
+## M1 implementation and orchestration
+
+When implementing, reviewing, dispatching, or accepting the session-review
+milestone (#4, #6–#12), read [the M1 guide](docs/MILESTONE-1.md) before editing.
+It defines the first milestone, dependency graph, work boundaries, host checks,
+SITREP handback and orchestrator acceptance rules. GitHub is the issue source of
+truth while #1 repairs legacy Beads; the guide documents the temporary hook
+exception. M1 adds read-only review/plans and preserves monitor-only operation.
+
 perf-guard monitors macOS memory pressure and manages processes that cause it. It exists because this machine's memory compressor runs billions of compress/decompress cycles, 300+ browser helpers pile up, and swap thrashing drags everything down. The tool watches compression rates and helper counts, then takes graduated action: notify, stop VMs, SIGSTOP helpers.
 
-An agent's job here is to check system health, decide whether intervention is needed, and execute the right command. Every mutation is reversible. The tool is designed to make the wrong action cheap to undo rather than hard to take.
+An agent's job here is to check system health, decide whether intervention is needed, and execute the right command. Existing suspension actions can be restored. Proposed agent exits end live processes; resuming a saved conversation is not rollback. M1 implements no exits.
 
 ## Structured output
 
@@ -46,11 +55,11 @@ perf-guard status --output json --fields level,compression_rate,browser_helpers
 Key fields:
 - `level`: `normal` | `warning` | `high` | `critical` -- the single most useful signal
 - `compression_rate`: pages/sec being compressed. >500 = warning, >2000 = critical
-- `browser_helpers`: count of renderer processes. >150 = critical regardless of compression rate
+- `browser_helpers`: count of configured helper matches. At or above `max_helpers`, the compression-based level rises one step, capped at critical.
 - `suspended`: array of processes perf-guard has already suspended
 - `vm_stopped`: whether perf-guard stopped the Lima VM
 
-Use `--fields` to request only what you need. The full status response has 14 fields; most decisions only need 2-3.
+Use `--fields` to request only what you need. `describe` lists the current fields, including daemon heartbeat freshness and monitor-only mode.
 
 ### focus (mutates, reversible with `restore`)
 
@@ -146,7 +155,7 @@ When should an agent intervene? Here's the intended logic:
 5. If `critical`: suggest `focus` to suspend all non-essential processes. Always dry-run first to show the user what will be suspended.
 6. After any intervention, run `forensics list` to check if a spike was captured. If so, `forensics show <timestamp>` gives the agent deep context about what caused the pressure.
 
-The daemon and CLI can conflict if both try to manage the same processes. If the daemon is running (`perf-guard daemon` or via LaunchAgent), prefer reading status over taking CLI actions -- the daemon has hysteresis logic and will handle escalation/de-escalation automatically. Use CLI actions when the daemon isn't running or when the user explicitly asks.
+The daemon and CLI can conflict if both try to manage the same processes. Check heartbeat freshness and `monitor_only` before assuming the daemon acts: monitor-only mode observes, notifies and captures diagnostics without process/VM actions. Prefer status reads while a daemon is active. Use CLI interventions within explicit user authorization.
 
 ## Rules
 

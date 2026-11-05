@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "repository": "k7lim/perf-guard",
+  "milestone": 1,
+  "parent_issue": 4,
+  "outcome": "Read-only live Herdr session review and identity-bound dry-run plans in CLI and menu; no agent exits",
+  "dependency_satisfied_when": "accepted, merged, and pushed; issue closure alone is insufficient",
+  "acceptance_owner": "orchestrator",
+  "max_implementation_workers": 3,
+  "tasks": [
+    {"issue": 10, "priority": "P0", "depends_on": [], "owner": "contract", "deliverable": "validated schemas, Go boundary types/interfaces, sanitized fixtures"},
+    {"issue": 6, "priority": "P1", "depends_on": [10], "owner": "process-collector", "deliverable": "identity-safe terminal-session process inventory"},
+    {"issue": 7, "priority": "P1", "depends_on": [10], "owner": "herdr-adapter", "deliverable": "scoped read-only Herdr inventory and correlation"},
+    {"issue": 11, "priority": "P1", "depends_on": [10], "owner": "swift-consumer", "deliverable": "fixture-verified review and selection/plan UI"},
+    {"issue": 8, "priority": "P1", "depends_on": [6, 7], "owner": "review-and-cli", "deliverable": "shared reconciliation, policy, list/plan commands"},
+    {"issue": 12, "priority": "P0", "depends_on": [8, 11], "owner": "independent-acceptance", "deliverable": "merged-SHA fixture, real-host, visual and zero-side-effect acceptance evidence"}
+  ],
+  "later": [
+    {"issue": 9, "gate": "M1 accepted plus explicit exit-design decisions", "scope": "approved graceful exit"},
+    {"issue": 13, "gate": "M1 accepted", "scope": "resource attribution beyond terminal agents"}
+  ],
+  "not_m1_blockers": [1, 2, 3, 5]
+}

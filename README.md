@@ -1,5 +1,10 @@
 # perf-guard
 
+For the first session-review implementation milestone, start with the
+[M1 orchestration guide](docs/MILESTONE-1.md) and its
+[machine-readable task graph](docs/milestone-1.tasks.json). They define the
+contract-first dispatch order, work boundaries, verification, and SITREP handback.
+
 macOS memory pressure monitor that automatically manages runaway processes. Single binary, no dependencies.
 
 Built for an M4 Pro with 48 GB RAM that was drowning in memory compression thrash (4.7 billion compressions), 235 browser helper processes, and swap-driven I/O spikes. No existing tool combines memory pressure monitoring with automated process suspension on macOS -- earlyoom and nohang do this on Linux but can't run here.
