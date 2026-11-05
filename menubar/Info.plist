@@ -7,6 +7,14 @@
     <key>CFBundleIdentifier</key>
     <string>com.user.perf-guard-menu</string>
     <key>CFBundleName</key>
+    <string>Performance Guard</string>
+    <key>CFBundleDisplayName</key>
+    <string>Performance Guard</string>
+    <key>CFBundleExecutable</key>
     <string>PerfGuardMenu</string>
+    <key>CFBundleVersion</key>
+    <string>2</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.2.0</string>
 </dict>
 </plist>

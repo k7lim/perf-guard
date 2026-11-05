@@ -12,7 +12,7 @@ class StatusBarController: NSObject {
         popover = NSPopover()
         super.init()
 
-        popover.contentSize = NSSize(width: 320, height: 400)
+        popover.contentSize = NSSize(width: 320, height: 470)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(rootView: StatusView(model: model))
 
@@ -52,9 +52,9 @@ class StatusBarController: NSObject {
                 color = .gray
             }
             if model.compressionRate > 0 {
-                rateText = String(format: " %.0f/s", model.compressionRate)
+                rateText = String(format: " PG %.0f/s", model.compressionRate)
             } else {
-                rateText = ""
+                rateText = " PG"
             }
         }
 
@@ -74,6 +74,8 @@ class StatusBarController: NSObject {
         image.isTemplate = false
 
         statusItem.button?.image = image
+        statusItem.button?.toolTip = "Performance Guard — \(model.daemonRunning ? model.level : "monitor unavailable")"
+        statusItem.button?.setAccessibilityLabel("Performance Guard")
 
         let font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
         let attrs: [NSAttributedString.Key: Any] = [.font: font]

@@ -215,3 +215,25 @@ read-only sensor with host process visibility.
 Browser tab capture is best-effort and requires a compatible local CDP endpoint.
 Other forensic data still works if CDP is unavailable. Runtime snapshots can
 contain private process paths, URLs, and tab titles; keep them out of Git.
+
+## Menu bar companion
+
+The daemon runs independently of the menu bar. To build and install the companion:
+
+```bash
+bash menubar/install.sh --dry-run
+bash menubar/install.sh --apply
+```
+
+This installs `~/Applications/Performance Guard.app`, launches it, and uses
+Apple's `SMAppService.mainApp` registration to request opening at login. macOS
+may require approval in Login Items. It leaves the daemon's mode unchanged.
+The menu shows **PG** with a colored pressure dot, live status, and the current
+monitor-only mode. **Quit Menu** closes only the companion; monitoring continues.
+
+The installed app prefers the current user-owned CLI, with a bundled CLI as a
+fallback. Reinstall through `menubar/install.sh` after changing the Swift sources.
+Existing installed app bundles are copied into the perf-guard backups directory
+before replacement. Build products and runtime session-review reports are not
+committed. To disable menu startup, remove Performance Guard from macOS Login
+Items; disabling the menu does not disable the `com.user.perf-guard` monitor.

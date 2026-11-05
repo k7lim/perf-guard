@@ -2,6 +2,8 @@ import Foundation
 import Combine
 
 struct LiveStatus: Codable {
+    let monitorOnly: Bool?
+    let discoveryError: String?
     let schemaVersion: Int
     let level: String
     let compressionRate: Double
@@ -37,6 +39,8 @@ struct SuspendedBrief: Codable, Identifiable, Equatable {
 // Accepted race: display may be up to 3 seconds stale (one poll interval). Fine for a status indicator.
 // Stale detection: if updatedAt is >60 seconds old, the daemon has likely stopped.
 class LiveStatusModel: ObservableObject {
+    @Published var monitorOnly: Bool = true
+    @Published var discoveryError: String?
     @Published var level: String = "unknown"
     @Published var compressionRate: Double = 0
     @Published var helperCount: Int = 0
@@ -66,6 +70,8 @@ class LiveStatusModel: ObservableObject {
         // The build.sh script also copies the binary next to the .app for portability.
         let appDir = Bundle.main.bundlePath.components(separatedBy: "/").dropLast().joined(separator: "/")
         let candidates = [
+            home.appendingPathComponent("Library/Application Support/perf-guard/bin/perf-guard").path,
+            Bundle.main.bundlePath + "/Contents/MacOS/perf-guard",
             appDir + "/perf-guard",                                          // next to .app (preferred)
             home.appendingPathComponent("go/bin/perf-guard").path,           // go install
             "/opt/homebrew/bin/perf-guard",                                  // homebrew
@@ -124,7 +130,7 @@ class LiveStatusModel: ObservableObject {
             guard let self = self else { return }
             let task = Process()
             task.executableURL = URL(fileURLWithPath: self.binaryPath)
-            task.arguments = ["daemon"]
+            task.arguments = ["daemon", "--monitor-only"]
             task.standardOutput = FileHandle.nullDevice
             task.standardError = FileHandle.nullDevice
 
@@ -180,6 +186,8 @@ class LiveStatusModel: ObservableObject {
         let tooNew = status.schemaVersion > maxKnownSchema
 
         DispatchQueue.main.async {
+            self.monitorOnly = status.monitorOnly ?? false
+            self.discoveryError = status.discoveryError
             if self.level != status.level { self.level = status.level }
             if self.compressionRate != status.compressionRate { self.compressionRate = status.compressionRate }
             if self.helperCount != status.helperCount { self.helperCount = status.helperCount }

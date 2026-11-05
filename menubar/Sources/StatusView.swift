@@ -5,6 +5,13 @@ struct StatusView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Text("Performance Guard").font(.headline)
+            Text(model.monitorOnly ? "Monitoring and alerts only" : "Automatic process management")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            if let error = model.discoveryError {
+                Text("Process discovery unavailable: \(error)").font(.caption).foregroundColor(.orange)
+            }
             if model.schemaTooNew {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -112,20 +119,22 @@ struct StatusView: View {
             Divider()
 
             // Daemon toggle
-            Button(action: {
-                if model.daemonPid != nil {
-                    model.stopDaemon()
-                } else {
-                    model.startDaemon()
+            if !model.daemonRunning {
+                Button(action: {
+                    if model.daemonPid != nil {
+                        model.stopDaemon()
+                    } else {
+                        model.startDaemon()
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: model.daemonPid != nil ? "stop.circle.fill" : "play.circle.fill")
+                        Text(model.daemonPid != nil ? "Stop Daemon" : "Start Daemon")
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-            }) {
-                HStack {
-                    Image(systemName: model.daemonPid != nil ? "stop.circle.fill" : "play.circle.fill")
-                    Text(model.daemonPid != nil ? "Stop Daemon" : "Start Daemon")
-                }
-                .frame(maxWidth: .infinity)
+                .controlSize(.large)
             }
-            .controlSize(.large)
 
             // Capture button — the main action
             Button(action: { model.captureSnapshot() }) {
@@ -147,7 +156,9 @@ struct StatusView: View {
 
             Divider()
 
-            Button("Quit") {
+            Text("Quitting this menu keeps the background monitor running.")
+                .font(.caption2).foregroundColor(.secondary)
+            Button("Quit Menu") {
                 NSApplication.shared.terminate(nil)
             }
             .buttonStyle(.plain)
