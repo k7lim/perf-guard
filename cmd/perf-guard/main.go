@@ -27,7 +27,7 @@ var (
 	commandName string
 )
 
-func main() {
+func newRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "perf-guard",
 		Short:         "macOS memory pressure monitor and process manager",
@@ -54,8 +54,20 @@ func main() {
 	root.AddCommand(sessionsCmd())
 	root.AddCommand(forensicsCmd())
 	root.AddCommand(describeCmd())
+	root.AddCommand(reviewCmd())
 
-	if err := root.Execute(); err != nil {
+	return root
+}
+func main() {
+	root := newRootCommand()
+	executed, err := root.ExecuteC()
+	if err != nil {
+		// Flag parsing and Args validation can fail before PersistentPreRunE. The
+		// review boundary still promises an error envelope with the failing command.
+		if printer == nil && executed != nil && (executed.Name() == "review" || (executed.Parent() != nil && executed.Parent().Name() == "review")) {
+			commandName = strings.TrimPrefix(executed.CommandPath(), "perf-guard ")
+			printer = output.NewPrinter(output.ResolveFormat(outputFlag), fieldsFlag)
+		}
 		if printer != nil {
 			printer.PrintError(commandName, err)
 		} else {

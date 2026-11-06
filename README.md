@@ -181,6 +181,18 @@ age, and resident memory without reading command arguments or terminating anythi
 Age is not inactivity; resident memory excludes compressed and swapped pages.
 There is no automatic session reaper.
 
+For scoped, identity-safe read-only review and fresh dry-run plans:
+
+```sh
+perf-guard review --output json --herdr-endpoint /absolute/herdr.sock --herdr-session explicit-session
+perf-guard review plan --output json --session REVIEW_ID --herdr-endpoint /absolute/herdr.sock --herdr-session explicit-session
+```
+
+Both commands are sensors. Plans always report `execution_supported=false` and
+preserve the shell; no session is exited. Missing Herdr context is an explicit
+partial result. See the [review service guide](internal/review/README.md) for
+selection, freshness, pagination, inherited target context and verification.
+
 `compressor_gb` is the physical GiB occupied by the compressor, not the size of
 original pages stored inside it. `daemon.stale` flags a heartbeat older than
 90 seconds; `daemon: null` means no readable heartbeat. A heartbeat does not
