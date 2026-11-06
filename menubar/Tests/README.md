@@ -50,7 +50,7 @@ same model/view (replace these synthetic example arguments locally):
 bash menubar/test-review.sh --live /tmp/m1-perf-guard unix:///example/herdr.sock session-a /tmp/private-real-review.png
 ```
 
-This performs one list and, when a reviewable record exists, one read-only plan.
+This performs up to ten list requests and one read-only plan.
 It navigates subsequent pages when needed to find a reviewable record. Failure to
 find one fails the real-plan gate. With a screenshot argument, it captures the
 review viewport and an additional `.plan.png` scrolled to the plan in the exact

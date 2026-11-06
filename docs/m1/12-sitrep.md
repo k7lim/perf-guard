@@ -124,3 +124,20 @@ does not merge, push, close #12 or close M1. The orchestrator personally reviews
 reruns critical cases on its merged SHA, pushes, verifies tracking state and owns
 the final decision. Temporary legacy Beads exception is per-command
 `git -c core.hooksPath=/dev/null`; no global/repository setting is changed.
+
+Committed acceptance check point: `6c0535c9857aa4acc24cf5846619630d1abb4825`
+passed frozen validation, full Go normal/race suites, vet, parity bridge, full
+Swift build and opt-in live smoke. A second clean detached worktree at that SHA
+passed frozen tests, the complete Swift harness (including stale/changed existing
+plan invalidation), graph validation and clean status. Final documentation-only
+head is supplied in the handback, with critical gates rerun there.
+
+Development failures were confined to the new acceptance harness: its initial
+CLI child launch used the wrong fixture-relative cwd, and an initial live-plan
+capture attempted to reference a private Swift view type. Both were corrected in
+test code before the committed checks; production source stayed unchanged. The
+first scrolled capture clipped plan details due to lazy layout; final native
+scroll-settled capture was regenerated and personally inspected by worker and
+orchestrator. Default optional live smokes skip by design in full suites; the
+explicit target smoke and native live gate ran separately and passed. No final
+required gate is failed or blocked.
