@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatusView: View {
     @ObservedObject var model: LiveStatusModel
+    var onReviewSessions: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -117,6 +118,12 @@ struct StatusView: View {
             }
 
             Divider()
+
+            Button(action: onReviewSessions) {
+                Label("Review Sessions", systemImage: "list.bullet.rectangle")
+                    .frame(maxWidth: .infinity)
+            }
+            .controlSize(.large)
 
             // Daemon toggle
             if !model.daemonRunning {
