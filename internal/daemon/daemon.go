@@ -38,6 +38,7 @@ type Daemon struct {
 	lastSpikeMu    sync.Mutex
 	lastSpikeTime  time.Time
 	discoveryError string
+	notifications  notificationGate
 }
 
 // New creates a new Daemon with the given config.
@@ -137,9 +138,7 @@ func (d *Daemon) Run() error {
 		if effectiveLevel != d.currentLevel {
 			d.logger.Printf("level change: %s → %s (rate=%.0f pages/s, helpers=%d)",
 				d.currentLevel, effectiveLevel, reading.CompressionRate, helpers)
-			if effectiveLevel >= pressure.Warning {
-				message := fmt.Sprintf("%s pressure: %.0f pages/sec compressed; %d helpers. Monitor only: %t.",
-					effectiveLevel, reading.CompressionRate, helpers, d.cfg.MonitorOnly)
+			if message := d.notificationForLevel(effectiveLevel, reading.CompressionRate, helpers, time.Now()); message != "" {
 				go func() {
 					if err := notify(message); err != nil {
 						d.logger.Printf("notification failed: %v", err)

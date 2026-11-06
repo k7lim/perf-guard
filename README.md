@@ -77,7 +77,7 @@ Without monitor-only, the daemon monitors continuously with adaptive polling (30
 | High | >1000 pages/s compressed | Stop Lima VM |
 | Critical | ≥2000 pages/s; helper count ≥150 raises the compression-based level by one | SIGSTOP browser + editor helpers |
 
-Hysteresis prevents flapping: 3 consecutive readings below threshold before downgrading.
+Hysteresis requires 3 consecutive readings below threshold before downgrading.
 
 ## How it works
 
@@ -88,6 +88,11 @@ Hysteresis prevents flapping: 3 consecutive readings below threshold before down
 - **VM management:** Stops/starts Lima VMs via `limactl` (graceful shutdown, not SIGSTOP).
 
 ## Configuration
+
+Pressure notifications are sent on escalation only. Repeated severities are
+limited to one alert every five minutes; the first escalation to a higher
+severity can alert immediately during that cooldown. Downgrades stay quiet.
+Monitoring, diagnostics and menu-bar status continue at their normal intervals.
 
 Optional. Works with sensible defaults out of the box. To customize:
 
@@ -164,7 +169,7 @@ Key decisions informed by studying earlyoom (3.9K stars) and nohang (1.2K stars)
 - **Pressure notifications.** The daemon notifies on upward pressure changes, including jumps straight to Critical. Monitor-only mode keeps notifications without automatic actions.
 - **Substring match, not regex.** nohang's regex config caused users to accidentally match and kill their desktop environment.
 - **Per-PID signals, not process groups.** earlyoom's process group signaling caused a signal storm bug.
-- **Hysteresis.** 3 consecutive readings below threshold to downgrade. Prevents notification spam and suspend/resume oscillation.
+- **Hysteresis.** 3 consecutive readings below threshold to downgrade. A separate notification cooldown limits alert bursts when pressure keeps oscillating.
 
 See [DIAGNOSTIC-REPORT.md](DIAGNOSTIC-REPORT.md) for the full system analysis that motivated this tool.
 
