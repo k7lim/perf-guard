@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "client_version": "0.9.5",
+  "ping": {
+    "type": "pong",
+    "version": "0.9.0",
+    "protocol": 22,
+    "capabilities": {
+      "live_handoff": true,
+      "health_check": true
+    }
+  },
+  "snapshot": {
+    "type": "session_snapshot",
+    "snapshot": {
+      "version": "0.9.0",
+      "protocol": 22,
+      "panes": [
+        {
+          "pane_id": "pane-101",
+          "workspace_id": "workspace-example",
+          "tab_id": "tab-example",
+          "terminal_id": "terminal-101",
+          "agent": "codex",
+          "agent_status": "idle",
+          "revision": 500,
+          "agent_session": null
+        },
+        {
+          "pane_id": "pane-102",
+          "workspace_id": "workspace-example",
+          "tab_id": "tab-example",
+          "terminal_id": "terminal-102",
+          "agent": "codex",
+          "agent_status": "done",
+          "revision": 500,
+          "agent_session": {
+            "source": "native",
+            "agent": "codex",
+            "kind": "id",
+            "value": "example-resume-102"
+          }
+        },
+        {
+          "pane_id": "pane-103",
+          "workspace_id": "workspace-example",
+          "tab_id": "tab-example",
+          "terminal_id": "terminal-103",
+          "agent": "codex",
+          "agent_status": "working",
+          "revision": 500,
+          "agent_session": null
+        },
+        {
+          "pane_id": "pane-104",
+          "workspace_id": "workspace-example",
+          "tab_id": "tab-example",
+          "terminal_id": "terminal-104",
+          "agent": "codex",
+          "agent_status": "blocked",
+          "revision": 500,
+          "agent_session": null
+        },
+        {
+          "pane_id": "pane-105",
+          "workspace_id": "workspace-example",
+          "tab_id": "tab-example",
+          "terminal_id": "terminal-105",
+          "agent": "codex",
+          "agent_status": "unknown",
+          "revision": 500,
+          "agent_session": null
+        }
+      ],
+      "agents": [
+        {
+          "pane_id": "pane-101",
+          "workspace_id": "workspace-example",
+          "tab_id": "tab-example",
+          "terminal_id": "terminal-101",
+          "agent": "codex",
+          "agent_status": "idle",
+          "revision": 500,
+          "agent_session": null
+        },
+        {
+          "pane_id": "pane-102",
+          "workspace_id": "workspace-example",
+          "tab_id": "tab-example",
+          "terminal_id": "terminal-102",
+          "agent": "codex",
+          "agent_status": "done",
+          "revision": 500,
+          "agent_session": {
+            "source": "native",
+            "agent": "codex",
+            "kind": "id",
+            "value": "example-resume-102"
+          }
+        },
+        {
+          "pane_id": "pane-103",
+          "workspace_id": "workspace-example",
+          "tab_id": "tab-example",
+          "terminal_id": "terminal-103",
+          "agent": "codex",
+          "agent_status": "working",
+          "revision": 500,
+          "agent_session": null
+        },
+        {
+          "pane_id": "pane-104",
+          "workspace_id": "workspace-example",
+          "tab_id": "tab-example",
+          "terminal_id": "terminal-104",
+          "agent": "codex",
+          "agent_status": "blocked",
+          "revision": 500,
+          "agent_session": null
+        },
+        {
+          "pane_id": "pane-105",
+          "workspace_id": "workspace-example",
+          "tab_id": "tab-example",
+          "terminal_id": "terminal-105",
+          "agent": "codex",
+          "agent_status": "unknown",
+          "revision": 500,
+          "agent_session": null
+        }
+      ]
+    }
+  },
+  "process_info": {
+    "pane-101": {
+      "type": "pane_process_info",
+      "process_info": {
+        "pane_id": "pane-101",
+        "foreground_processes": [
+          {
+            "pid": 101,
+            "name": "codex"
+          }
+        ]
+      }
+    },
+    "pane-102": {
+      "type": "pane_process_info",
+      "process_info": {
+        "pane_id": "pane-102",
+        "foreground_processes": [
+          {
+            "pid": 102,
+            "name": "codex"
+          }
+        ]
+      }
+    },
+    "pane-103": {
+      "type": "pane_process_info",
+      "process_info": {
+        "pane_id": "pane-103",
+        "foreground_processes": [
+          {
+            "pid": 103,
+            "name": "codex"
+          }
+        ]
+      }
+    },
+    "pane-104": {
+      "type": "pane_process_info",
+      "process_info": {
+        "pane_id": "pane-104",
+        "foreground_processes": [
+          {
+            "pid": 104,
+            "name": "codex"
+          }
+        ]
+      }
+    },
+    "pane-105": {
+      "type": "pane_process_info",
+      "process_info": {
+        "pane_id": "pane-105",
+        "foreground_processes": [
+          {
+            "pid": 105,
+            "name": "codex"
+          }
+        ]
+      }
+    }
+  }
+}
