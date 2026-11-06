@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "collected_at": "2026-01-02T12:00:00Z",
+  "target": {
+    "endpoint": "unix:///example/herdr.sock",
+    "session_id": "session-a"
+  },
+  "sources": [
+    {
+      "source": "process",
+      "status": "fresh",
+      "collected_at": "2026-01-02T12:00:00Z",
+      "provenance": "sanitized-fixture"
+    },
+    {
+      "source": "herdr",
+      "status": "fresh",
+      "collected_at": "2026-01-02T12:00:00Z",
+      "provenance": "sanitized-fixture"
+    }
+  ],
+  "records": [
+    {
+      "id": "review-v1-023a18e9a96e0294c9964ee2501890e6201af3f96661ab2738a990321db30f8b",
+      "identity": {
+        "endpoint": "unix:///example/herdr.sock",
+        "server_id": "server-a",
+        "session_id": "session-a",
+        "workspace_id": "workspace-a",
+        "tab_id": "tab-a",
+        "pane_id": "pane-101",
+        "revision": "occupant-1",
+        "process": {
+          "pid": 101,
+          "start_id": "os-start-101"
+        }
+      },
+      "process": {
+        "pid": 101,
+        "start_id": "os-start-101"
+      },
+      "agent": "codex",
+      "project": "example-project",
+      "cwd": "/example/project",
+      "age_seconds": 120,
+      "process_observed_at": "2026-01-02T12:00:00Z",
+      "process_provenance": "os-start-and-elapsed",
+      "memory": {
+        "resident_rss_bytes": 1234,
+        "summed_rss_is_estimate": false,
+        "physical_footprint_bytes": null,
+        "compressed_bytes": null,
+        "swap_bytes": null,
+        "provenance": "os-resident-rss"
+      },
+      "lifecycle": {
+        "state": "idle",
+        "observed_at": "2026-01-02T12:00:00Z",
+        "provenance": "herdr-agent-state"
+      },
+      "user_activity": null,
+      "conversation_activity": null,
+      "child_work": {
+        "state": "unknown",
+        "provenance": "not-observed",
+        "observed_at": null
+      },
+      "worktree": {
+        "state": "clean",
+        "observed_at": "2026-01-02T12:00:00Z",
+        "provenance": "git-status-read-only",
+        "warnings": []
+      },
+      "resume_reference": null,
+      "reviewable": false,
+      "reasons": [
+        "duplicate_identity"
+      ],
+      "warnings": []
+    }
+  ],
+  "total": 1,
+  "reviewable_total": 0,
+  "limit": 50,
+  "offset": 0,
+  "warnings": [
+    {
+      "code": "duplicate_identity",
+      "source": "herdr",
+      "message": "Duplicate occupant collapsed and excluded"
+    }
+  ]
+}

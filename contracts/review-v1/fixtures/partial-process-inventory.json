@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "source": {
+    "source": "process",
+    "status": "partial",
+    "collected_at": "2026-01-02T12:00:00Z",
+    "provenance": "sanitized-fixture"
+  },
+  "processes": [
+    {
+      "pid": 101,
+      "identity": {
+        "pid": 101,
+        "start_id": "os-start-101"
+      },
+      "parent_pid": 50,
+      "owner": {
+        "pid": 101,
+        "start_id": "os-start-101"
+      },
+      "agent": "codex",
+      "kind": "terminal",
+      "tty": "ttys001",
+      "cwd": "/example/project",
+      "age_seconds": 120,
+      "memory": {
+        "resident_rss_bytes": 1234,
+        "summed_rss_is_estimate": false,
+        "physical_footprint_bytes": null,
+        "compressed_bytes": null,
+        "swap_bytes": null,
+        "provenance": "os-resident-rss"
+      },
+      "observed_at": "2026-01-02T12:00:00Z",
+      "field_sources": {
+        "identity": "os-start",
+        "cwd": "os-cwd",
+        "age_seconds": "os-elapsed",
+        "memory": "os-rss"
+      },
+      "warnings": []
+    },
+    {
+      "pid": 102,
+      "identity": {
+        "pid": 102,
+        "start_id": "os-start-102"
+      },
+      "parent_pid": 101,
+      "owner": {
+        "pid": 101,
+        "start_id": "os-start-101"
+      },
+      "agent": "wrapper",
+      "kind": "helper",
+      "tty": "ttys001",
+      "cwd": "/example/project",
+      "age_seconds": 120,
+      "memory": {
+        "resident_rss_bytes": 1234,
+        "summed_rss_is_estimate": false,
+        "physical_footprint_bytes": null,
+        "compressed_bytes": null,
+        "swap_bytes": null,
+        "provenance": "os-resident-rss"
+      },
+      "observed_at": "2026-01-02T12:00:00Z",
+      "field_sources": {
+        "identity": "os-start",
+        "cwd": "os-cwd",
+        "age_seconds": "os-elapsed",
+        "memory": "os-rss"
+      },
+      "warnings": []
+    },
+    {
+      "pid": 103,
+      "identity": {
+        "pid": 103,
+        "start_id": "os-start-103"
+      },
+      "parent_pid": 102,
+      "owner": {
+        "pid": 101,
+        "start_id": "os-start-101"
+      },
+      "agent": "wrapper",
+      "kind": "helper",
+      "tty": "ttys001",
+      "cwd": "/example/project",
+      "age_seconds": 120,
+      "memory": {
+        "resident_rss_bytes": 1234,
+        "summed_rss_is_estimate": false,
+        "physical_footprint_bytes": null,
+        "compressed_bytes": null,
+        "swap_bytes": null,
+        "provenance": "os-resident-rss"
+      },
+      "observed_at": "2026-01-02T12:00:00Z",
+      "field_sources": {
+        "identity": "os-start",
+        "cwd": "os-cwd",
+        "age_seconds": "os-elapsed",
+        "memory": "os-rss"
+      },
+      "warnings": []
+    },
+    {
+      "pid": 104,
+      "identity": {
+        "pid": 104,
+        "start_id": "os-start-104"
+      },
+      "parent_pid": 50,
+      "owner": {
+        "pid": 104,
+        "start_id": "os-start-104"
+      },
+      "agent": "codex",
+      "kind": "terminal",
+      "tty": "ttys002",
+      "cwd": "/example/project",
+      "age_seconds": 120,
+      "memory": {
+        "resident_rss_bytes": 1234,
+        "summed_rss_is_estimate": false,
+        "physical_footprint_bytes": null,
+        "compressed_bytes": null,
+        "swap_bytes": null,
+        "provenance": "os-resident-rss"
+      },
+      "observed_at": "2026-01-02T12:00:00Z",
+      "field_sources": {
+        "identity": "os-start",
+        "cwd": "os-cwd",
+        "age_seconds": "os-elapsed",
+        "memory": "os-rss"
+      },
+      "warnings": []
+    },
+    {
+      "pid": 105,
+      "identity": null,
+      "parent_pid": 999,
+      "owner": null,
+      "agent": "wrapper",
+      "kind": "background",
+      "tty": null,
+      "cwd": null,
+      "age_seconds": 120,
+      "memory": {
+        "resident_rss_bytes": 1234,
+        "summed_rss_is_estimate": false,
+        "physical_footprint_bytes": null,
+        "compressed_bytes": null,
+        "swap_bytes": null,
+        "provenance": "os-resident-rss"
+      },
+      "observed_at": "2026-01-02T12:00:00Z",
+      "field_sources": {
+        "identity": "os-start",
+        "cwd": "os-cwd",
+        "age_seconds": "os-elapsed",
+        "memory": "os-rss"
+      },
+      "warnings": [
+        {
+          "code": "process_disappeared",
+          "source": "process",
+          "message": "Identity unavailable"
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "root": {
+        "pid": 101,
+        "start_id": "os-start-101"
+      },
+      "members": [
+        {
+          "pid": 101,
+          "start_id": "os-start-101"
+        },
+        {
+          "pid": 102,
+          "start_id": "os-start-102"
+        },
+        {
+          "pid": 103,
+          "start_id": "os-start-103"
+        }
+      ],
+      "memory": {
+        "resident_rss_bytes": 3702,
+        "summed_rss_is_estimate": true,
+        "physical_footprint_bytes": null,
+        "compressed_bytes": null,
+        "swap_bytes": null,
+        "provenance": "os-resident-rss"
+      }
+    },
+    {
+      "root": {
+        "pid": 104,
+        "start_id": "os-start-104"
+      },
+      "members": [
+        {
+          "pid": 104,
+          "start_id": "os-start-104"
+        }
+      ],
+      "memory": {
+        "resident_rss_bytes": 1234,
+        "summed_rss_is_estimate": true,
+        "physical_footprint_bytes": null,
+        "compressed_bytes": null,
+        "swap_bytes": null,
+        "provenance": "os-resident-rss"
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "partial_discovery",
+      "source": "process",
+      "message": "One lookup failed"
+    }
+  ]
+}

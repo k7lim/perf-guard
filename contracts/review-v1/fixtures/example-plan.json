@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "collected_at": "2026-01-02T12:00:00Z",
+  "target": {
+    "endpoint": "unix:///example/herdr.sock",
+    "session_id": "session-a"
+  },
+  "execution_supported": false,
+  "selections": [
+    {
+      "requested_id": "review-v1-023a18e9a96e0294c9964ee2501890e6201af3f96661ab2738a990321db30f8b",
+      "status": "reviewable",
+      "record": {
+        "id": "review-v1-023a18e9a96e0294c9964ee2501890e6201af3f96661ab2738a990321db30f8b",
+        "identity": {
+          "endpoint": "unix:///example/herdr.sock",
+          "server_id": "server-a",
+          "session_id": "session-a",
+          "workspace_id": "workspace-a",
+          "tab_id": "tab-a",
+          "pane_id": "pane-101",
+          "revision": "occupant-1",
+          "process": {
+            "pid": 101,
+            "start_id": "os-start-101"
+          }
+        },
+        "process": {
+          "pid": 101,
+          "start_id": "os-start-101"
+        },
+        "agent": "codex",
+        "project": "example-project",
+        "cwd": "/example/project",
+        "age_seconds": 120,
+        "process_observed_at": "2026-01-02T12:00:00Z",
+        "process_provenance": "os-start-and-elapsed",
+        "memory": {
+          "resident_rss_bytes": 1234,
+          "summed_rss_is_estimate": false,
+          "physical_footprint_bytes": null,
+          "compressed_bytes": null,
+          "swap_bytes": null,
+          "provenance": "os-resident-rss"
+        },
+        "lifecycle": {
+          "state": "idle",
+          "observed_at": "2026-01-02T12:00:00Z",
+          "provenance": "herdr-agent-state"
+        },
+        "user_activity": null,
+        "conversation_activity": null,
+        "child_work": {
+          "state": "unknown",
+          "provenance": "not-observed",
+          "observed_at": null
+        },
+        "worktree": {
+          "state": "clean",
+          "observed_at": "2026-01-02T12:00:00Z",
+          "provenance": "git-status-read-only",
+          "warnings": []
+        },
+        "resume_reference": null,
+        "reviewable": true,
+        "reasons": [
+          "fresh_idle"
+        ],
+        "warnings": []
+      },
+      "reasons": [
+        "fresh_idle"
+      ],
+      "recovery_available": false,
+      "preserve_shell": true
+    },
+    {
+      "requested_id": "review-v1-missing",
+      "status": "missing",
+      "record": null,
+      "reasons": [
+        "selection_missing_or_changed"
+      ],
+      "recovery_available": false,
+      "preserve_shell": true
+    },
+    {
+      "requested_id": "review-v1-023a18e9a96e0294c9964ee2501890e6201af3f96661ab2738a990321db30f8b",
+      "status": "duplicate",
+      "record": null,
+      "reasons": [
+        "duplicate_selection"
+      ],
+      "recovery_available": false,
+      "preserve_shell": true
+    },
+    {
+      "requested_id": "review-v1-a12ce6757efb588e9b86e2089a335c3e2b3b141f4c85f8987c397dcb52c1151c",
+      "status": "excluded",
+      "record": {
+        "id": "review-v1-a12ce6757efb588e9b86e2089a335c3e2b3b141f4c85f8987c397dcb52c1151c",
+        "identity": {
+          "endpoint": "unix:///example/herdr.sock",
+          "server_id": "server-a",
+          "session_id": "session-a",
+          "workspace_id": "workspace-a",
+          "tab_id": "tab-a",
+          "pane_id": "pane-103",
+          "revision": "occupant-1",
+          "process": {
+            "pid": 103,
+            "start_id": "os-start-103"
+          }
+        },
+        "process": {
+          "pid": 103,
+          "start_id": "os-start-103"
+        },
+        "agent": "codex",
+        "project": "example-project",
+        "cwd": "/example/project",
+        "age_seconds": 120,
+        "process_observed_at": "2026-01-02T12:00:00Z",
+        "process_provenance": "os-start-and-elapsed",
+        "memory": {
+          "resident_rss_bytes": 1234,
+          "summed_rss_is_estimate": false,
+          "physical_footprint_bytes": null,
+          "compressed_bytes": null,
+          "swap_bytes": null,
+          "provenance": "os-resident-rss"
+        },
+        "lifecycle": {
+          "state": "working",
+          "observed_at": "2026-01-02T12:00:00Z",
+          "provenance": "herdr-agent-state"
+        },
+        "user_activity": null,
+        "conversation_activity": null,
+        "child_work": {
+          "state": "unknown",
+          "provenance": "not-observed",
+          "observed_at": null
+        },
+        "worktree": {
+          "state": "clean",
+          "observed_at": "2026-01-02T12:00:00Z",
+          "provenance": "git-status-read-only",
+          "warnings": []
+        },
+        "resume_reference": null,
+        "reviewable": false,
+        "reasons": [
+          "working"
+        ],
+        "warnings": []
+      },
+      "reasons": [
+        "working"
+      ],
+      "recovery_available": false,
+      "preserve_shell": true
+    }
+  ],
+  "sources": [
+    {
+      "source": "process",
+      "status": "fresh",
+      "collected_at": "2026-01-02T12:00:00Z",
+      "provenance": "sanitized-fixture"
+    },
+    {
+      "source": "herdr",
+      "status": "fresh",
+      "collected_at": "2026-01-02T12:00:00Z",
+      "provenance": "sanitized-fixture"
+    }
+  ],
+  "warnings": []
+}

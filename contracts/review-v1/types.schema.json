@@ -1,0 +1,1106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ProcessIdentity": {
+      "type": "object",
+      "required": [
+        "pid",
+        "start_id"
+      ],
+      "properties": {
+        "pid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "start_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "HerdrTarget": {
+      "type": "object",
+      "required": [
+        "endpoint",
+        "session_id"
+      ],
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "OccupantIdentity": {
+      "type": "object",
+      "required": [
+        "endpoint",
+        "server_id",
+        "session_id",
+        "workspace_id",
+        "tab_id",
+        "pane_id",
+        "revision",
+        "process"
+      ],
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "server_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workspace_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tab_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pane_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "process": {
+          "$ref": "#/$defs/ProcessIdentity"
+        }
+      },
+      "additionalProperties": true
+    },
+    "Warning": {
+      "type": "object",
+      "required": [
+        "code",
+        "source",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "SourceStatus": {
+      "type": "object",
+      "required": [
+        "source",
+        "status",
+        "collected_at",
+        "provenance"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "fresh",
+            "stale",
+            "unavailable",
+            "partial"
+          ]
+        },
+        "collected_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "MemoryObservation": {
+      "type": "object",
+      "required": [
+        "resident_rss_bytes",
+        "summed_rss_is_estimate",
+        "physical_footprint_bytes",
+        "compressed_bytes",
+        "swap_bytes",
+        "provenance"
+      ],
+      "properties": {
+        "resident_rss_bytes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "summed_rss_is_estimate": {
+          "type": "boolean"
+        },
+        "physical_footprint_bytes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "compressed_bytes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "swap_bytes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "ProcessRecord": {
+      "type": "object",
+      "required": [
+        "pid",
+        "identity",
+        "parent_pid",
+        "owner",
+        "agent",
+        "kind",
+        "tty",
+        "cwd",
+        "age_seconds",
+        "memory",
+        "observed_at",
+        "field_sources",
+        "warnings"
+      ],
+      "properties": {
+        "pid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "identity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProcessIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parent_pid": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProcessIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agent": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "terminal",
+            "helper",
+            "desktop_helper",
+            "app_server",
+            "background"
+          ]
+        },
+        "tty": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cwd": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "age_seconds": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "memory": {
+          "$ref": "#/$defs/MemoryObservation"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "field_sources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "ProcessGroup": {
+      "type": "object",
+      "required": [
+        "root",
+        "members",
+        "memory"
+      ],
+      "properties": {
+        "root": {
+          "$ref": "#/$defs/ProcessIdentity"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProcessIdentity"
+          }
+        },
+        "memory": {
+          "$ref": "#/$defs/MemoryObservation"
+        }
+      },
+      "additionalProperties": true
+    },
+    "ProcessInventory": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "source",
+        "processes",
+        "groups",
+        "warnings"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "source": {
+          "$ref": "#/$defs/SourceStatus"
+        },
+        "processes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProcessRecord"
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProcessGroup"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "ActivityObservation": {
+      "type": "object",
+      "required": [
+        "at",
+        "provenance"
+      ],
+      "properties": {
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "LifecycleObservation": {
+      "type": "object",
+      "required": [
+        "state",
+        "observed_at",
+        "provenance"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "idle",
+            "done",
+            "working",
+            "blocked",
+            "unknown"
+          ]
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "HerdrOccupant": {
+      "type": "object",
+      "required": [
+        "server_id",
+        "session_id",
+        "workspace_id",
+        "tab_id",
+        "pane_id",
+        "revision",
+        "process",
+        "correlation",
+        "lifecycle",
+        "user_activity",
+        "conversation_activity",
+        "resume_reference",
+        "warnings"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workspace_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tab_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pane_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "process": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProcessIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlation": {
+          "type": "string",
+          "enum": [
+            "positive",
+            "unknown",
+            "ambiguous"
+          ]
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/LifecycleObservation"
+        },
+        "user_activity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UserActivityObservation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "conversation_activity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConversationActivityObservation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resume_reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "HerdrInventory": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "target",
+        "source",
+        "client_version",
+        "server_version",
+        "capabilities",
+        "occupants",
+        "warnings"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "target": {
+          "$ref": "#/$defs/HerdrTarget"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceStatus"
+        },
+        "client_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "server_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "occupants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HerdrOccupant"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "WorktreeObservation": {
+      "type": "object",
+      "required": [
+        "state",
+        "observed_at",
+        "provenance",
+        "warnings"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "clean",
+            "dirty",
+            "unknown",
+            "not_repository"
+          ]
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "ChildWorkObservation": {
+      "type": "object",
+      "required": [
+        "state",
+        "provenance",
+        "observed_at"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "working",
+            "none_observed",
+            "unknown"
+          ]
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "ReviewRecord": {
+      "type": "object",
+      "required": [
+        "id",
+        "identity",
+        "process",
+        "agent",
+        "project",
+        "cwd",
+        "age_seconds",
+        "process_observed_at",
+        "process_provenance",
+        "memory",
+        "lifecycle",
+        "user_activity",
+        "conversation_activity",
+        "child_work",
+        "worktree",
+        "resume_reference",
+        "reviewable",
+        "reasons",
+        "warnings"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OccupantIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "process": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProcessIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agent": {
+          "type": "string"
+        },
+        "project": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cwd": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "age_seconds": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "process_observed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "process_provenance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "memory": {
+          "$ref": "#/$defs/MemoryObservation"
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/LifecycleObservation"
+        },
+        "user_activity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UserActivityObservation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "conversation_activity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConversationActivityObservation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "child_work": {
+          "$ref": "#/$defs/ChildWorkObservation"
+        },
+        "worktree": {
+          "$ref": "#/$defs/WorktreeObservation"
+        },
+        "resume_reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewable": {
+          "type": "boolean"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "fresh_idle",
+              "fresh_done",
+              "working",
+              "blocked",
+              "unknown_state",
+              "stale_source",
+              "uncorrelated",
+              "current_controller",
+              "identity_unavailable",
+              "duplicate_identity",
+              "child_working",
+              "selection_missing_or_changed",
+              "duplicate_selection"
+            ]
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "reviewable": {
+                "const": true
+              }
+            },
+            "required": [
+              "reviewable"
+            ]
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "$ref": "#/$defs/OccupantIdentity"
+              },
+              "process": {
+                "$ref": "#/$defs/ProcessIdentity"
+              },
+              "reasons": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "enum": [
+                    "fresh_idle",
+                    "fresh_done"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ReviewResponse": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "collected_at",
+        "target",
+        "sources",
+        "records",
+        "total",
+        "reviewable_total",
+        "limit",
+        "offset",
+        "warnings"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "collected_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "target": {
+          "$ref": "#/$defs/HerdrTarget"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceStatus"
+          }
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReviewRecord"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reviewable_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "PlanSelection": {
+      "type": "object",
+      "required": [
+        "requested_id",
+        "status",
+        "record",
+        "reasons",
+        "recovery_available",
+        "preserve_shell"
+      ],
+      "properties": {
+        "requested_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "reviewable",
+            "excluded",
+            "missing",
+            "duplicate"
+          ]
+        },
+        "record": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReviewRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "fresh_idle",
+              "fresh_done",
+              "working",
+              "blocked",
+              "unknown_state",
+              "stale_source",
+              "uncorrelated",
+              "current_controller",
+              "identity_unavailable",
+              "duplicate_identity",
+              "child_working",
+              "selection_missing_or_changed",
+              "duplicate_selection"
+            ]
+          }
+        },
+        "recovery_available": {
+          "type": "boolean"
+        },
+        "preserve_shell": {
+          "const": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "ReviewPlan": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "collected_at",
+        "target",
+        "execution_supported",
+        "selections",
+        "sources",
+        "warnings"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "collected_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "target": {
+          "$ref": "#/$defs/HerdrTarget"
+        },
+        "execution_supported": {
+          "const": false
+        },
+        "selections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PlanSelection"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceStatus"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "UserActivityObservation": {
+      "type": "object",
+      "required": [
+        "at",
+        "provenance"
+      ],
+      "properties": {
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "ConversationActivityObservation": {
+      "type": "object",
+      "required": [
+        "at",
+        "provenance"
+      ],
+      "properties": {
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

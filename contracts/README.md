@@ -31,3 +31,9 @@ Forensic snapshots: keep last 100 files, delete oldest. Configurable via `forens
 | Forensic snapshots | `~/.config/perf-guard/forensics/<timestamp>.json` |
 | Config | `~/.config/perf-guard/config.toml` |
 | State | `~/.config/perf-guard/state.json` |
+
+## Read-only session review (M1)
+
+The additive [review v1 contract](review-v1/README.md) defines validated process,
+Herdr, review-response and plan schemas, matching Go provider boundaries and
+sanitized executable fixtures. It does not change live-status or forensic files.

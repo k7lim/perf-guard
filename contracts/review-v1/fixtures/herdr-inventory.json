@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "target": {
+    "endpoint": "unix:///example/herdr.sock",
+    "session_id": "session-a"
+  },
+  "source": {
+    "source": "herdr",
+    "status": "fresh",
+    "collected_at": "2026-01-02T12:00:00Z",
+    "provenance": "sanitized-fixture"
+  },
+  "client_version": "example-client-2",
+  "server_version": "example-server-1",
+  "capabilities": [
+    "session.snapshot",
+    "pane.process_info"
+  ],
+  "occupants": [
+    {
+      "server_id": "server-a",
+      "session_id": "session-a",
+      "workspace_id": "workspace-a",
+      "tab_id": "tab-a",
+      "pane_id": "pane-101",
+      "revision": "occupant-1",
+      "process": {
+        "pid": 101,
+        "start_id": "os-start-101"
+      },
+      "correlation": "positive",
+      "lifecycle": {
+        "state": "idle",
+        "observed_at": "2026-01-02T12:00:00Z",
+        "provenance": "herdr-agent-state"
+      },
+      "user_activity": null,
+      "conversation_activity": null,
+      "resume_reference": null,
+      "warnings": []
+    },
+    {
+      "server_id": "server-a",
+      "session_id": "session-a",
+      "workspace_id": "workspace-a",
+      "tab_id": "tab-a",
+      "pane_id": "pane-102",
+      "revision": "occupant-1",
+      "process": {
+        "pid": 102,
+        "start_id": "os-start-102"
+      },
+      "correlation": "positive",
+      "lifecycle": {
+        "state": "done",
+        "observed_at": "2026-01-02T12:00:00Z",
+        "provenance": "herdr-agent-state"
+      },
+      "user_activity": null,
+      "conversation_activity": null,
+      "resume_reference": null,
+      "warnings": []
+    },
+    {
+      "server_id": "server-a",
+      "session_id": "session-a",
+      "workspace_id": "workspace-a",
+      "tab_id": "tab-a",
+      "pane_id": "pane-103",
+      "revision": "occupant-1",
+      "process": {
+        "pid": 103,
+        "start_id": "os-start-103"
+      },
+      "correlation": "positive",
+      "lifecycle": {
+        "state": "working",
+        "observed_at": "2026-01-02T12:00:00Z",
+        "provenance": "herdr-agent-state"
+      },
+      "user_activity": null,
+      "conversation_activity": null,
+      "resume_reference": null,
+      "warnings": []
+    },
+    {
+      "server_id": "server-a",
+      "session_id": "session-a",
+      "workspace_id": "workspace-a",
+      "tab_id": "tab-a",
+      "pane_id": "pane-104",
+      "revision": "occupant-1",
+      "process": {
+        "pid": 104,
+        "start_id": "os-start-104"
+      },
+      "correlation": "positive",
+      "lifecycle": {
+        "state": "blocked",
+        "observed_at": "2026-01-02T12:00:00Z",
+        "provenance": "herdr-agent-state"
+      },
+      "user_activity": null,
+      "conversation_activity": null,
+      "resume_reference": null,
+      "warnings": []
+    }
+  ],
+  "warnings": []
+}

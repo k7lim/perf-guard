@@ -1,0 +1,54 @@
+[
+  {
+    "file": "healthy-review.json",
+    "kind": "ReviewResponse"
+  },
+  {
+    "file": "empty-review.json",
+    "kind": "ReviewResponse"
+  },
+  {
+    "file": "stale-partial-review.json",
+    "kind": "ReviewResponse"
+  },
+  {
+    "file": "unavailable-herdr-review.json",
+    "kind": "ReviewResponse"
+  },
+  {
+    "file": "dirty-review.json",
+    "kind": "ReviewResponse"
+  },
+  {
+    "file": "changed-occupant-review.json",
+    "kind": "ReviewResponse"
+  },
+  {
+    "file": "two-servers-review.json",
+    "kind": "ReviewResponse"
+  },
+  {
+    "file": "duplicate-scoped-review.json",
+    "kind": "ReviewResponse"
+  },
+  {
+    "file": "example-plan.json",
+    "kind": "ReviewPlan"
+  },
+  {
+    "file": "process-inventory.json",
+    "kind": "ProcessInventory"
+  },
+  {
+    "file": "partial-process-inventory.json",
+    "kind": "ProcessInventory"
+  },
+  {
+    "file": "herdr-inventory.json",
+    "kind": "HerdrInventory"
+  },
+  {
+    "file": "unknown-herdr-inventory.json",
+    "kind": "HerdrInventory"
+  }
+]
