@@ -61,6 +61,9 @@ actor FixtureReviewClient: ReviewClient {
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
                 try await renderFixtures(directory)
                 print("PASS: sanitized SwiftUI fixture renders at \(directory.path)")
+            } else if CommandLine.arguments.count > 2 && CommandLine.arguments[1] == "--parity" {
+                try await cliParity(URL(fileURLWithPath: CommandLine.arguments[2]))
+                print("PASS: actual fixture CLI / Swift records, reasons, selections and read-only plan parity")
             } else if CommandLine.arguments.count > 3 && CommandLine.arguments[1] == "--live" {
                 // Acceptance-only, explicitly injected built CLI and target. Data
                 // and optional rendering remain local to the caller's directory.
@@ -69,14 +72,32 @@ actor FixtureReviewClient: ReviewClient {
                 model.session = CommandLine.arguments.count > 4 ? CommandLine.arguments[4] : ""
                 await model.refresh()
                 try require(model.error == nil, model.error ?? "live review failed")
+                // Display IDs for excluded process-only rows can sort before
+                // reviewable identities. Exercise actual model pagination.
+                var pages = 1
+                while !model.records.contains(where: { $0.reviewable }), pages < 10,
+                      let response = model.response,
+                      response.offset + response.records.count < response.total {
+                    await model.refresh(offset: response.offset + response.limit)
+                    pages += 1
+                    try require(model.error == nil, "live next page failed")
+                }
                 if let record = model.records.first(where: { $0.reviewable }) {
                     model.toggle(record)
                     await model.requestPlan()
                     try require(model.error == nil && model.plan?.executionSupported == false, "live plan unavailable")
                 }
                 if CommandLine.arguments.count > 5 {
-                    try render(model, to: URL(fileURLWithPath: CommandLine.arguments[5]))
+                    let url = URL(fileURLWithPath: CommandLine.arguments[5])
+                    try render(model, to: url)
+                    // A live page can contain 50 rows, placing its plan below
+                    // the initial viewport. Also capture the exact production
+                    // plan component so acceptance inspects its actual content.
+                    if model.plan != nil {
+                        try render(model, to: url.deletingPathExtension().appendingPathExtension("plan.png"), bottom: true)
+                    }
                 }
+                try require(model.plan != nil, "live inventory had no reviewable selection; real plan gate blocked")
                 print("PASS: explicit CLI live review decoded; records=\(model.records.count), plan=\(model.plan == nil ? "no reviewable selection" : "read-only")")
             } else {
                 try await tests()
@@ -86,6 +107,38 @@ actor FixtureReviewClient: ReviewClient {
             fputs(error.localizedDescription + "\n", stderr)
             exit(1)
         }
+    }
+
+    // Independent acceptance bridge: these envelopes come from the actual Go
+    // command runner with its existing frozen-fixture provider injection, not a
+    // second implementation of eligibility or plan policy.
+    @MainActor static func cliParity(_ directory: URL) async throws {
+        let list = try Data(contentsOf: directory.appendingPathComponent("review.json"))
+        let plan = try Data(contentsOf: directory.appendingPathComponent("plan.json"))
+        let client = FixtureReviewClient([.init(data: list), .init(data: plan)])
+        let model = ReviewModel(client: client)
+        await model.refresh()
+        try require(model.error == nil, "CLI envelope decoded by Swift")
+        let fixture = try JSONSerialization.jsonObject(with: payload("healthy-review")) as! [String: Any]
+        let expected = fixture["records"] as! [[String: Any]]
+        try require(model.records.map { $0.id } == expected.map { $0["id"] as! String }, "identical fixture record ordering and IDs")
+        for (actual, frozen) in zip(model.records, expected) {
+            try require(actual.reasons == frozen["reasons"] as! [String], "identical fixture reasons")
+            try require(actual.reviewable == frozen["reviewable"] as! Bool, "identical fixture reviewability")
+            try require(actual.lifecycle.state == (frozen["lifecycle"] as! [String: Any])["state"] as! String, "identical lifecycle")
+            model.toggle(actual)
+        }
+        let ids = model.selection.keys.sorted()
+        try require(ids.count == 2, "only two exact reviewable fixture occupants selected")
+        await model.requestPlan()
+        try require(model.error == nil && model.plan?.executionSupported == false, "CLI plan accepted without execution")
+        try require(model.plan?.selections.map { $0.requestedId } == ids, "same CLI and Swift requested identities")
+        for item in model.plan!.selections {
+            let record = model.records.first { $0.id == item.requestedId }!
+            try require(item.status == "reviewable" && item.record?.identity == record.identity && item.reasons == record.reasons && item.preserveShell && !item.recoveryAvailable, "same CLI and Swift selected records/reasons; absent resume stays unavailable")
+        }
+        let calls = await client.calls
+        try require(calls[1] == ["review", "plan", "--output", "json"] + ids.flatMap { ["--session", $0] }, "exact multi-selection arguments sent to CLI")
     }
 
     @MainActor static func tests() async throws {
@@ -120,6 +173,17 @@ actor FixtureReviewClient: ReviewClient {
         try require(calls[0] == ["review", "--output", "json", "--limit", "50", "--offset", "0", "--herdr-endpoint", "unix:///example/herdr.sock", "--herdr-session", "session-a"], "frozen list flags")
         try require(calls[1] == ["review", "plan", "--output", "json", "--session", idle.id, "--herdr-endpoint", "unix:///example/herdr.sock", "--herdr-session", "session-a"], "frozen plan exact selection flags")
         try require(calls.allSatisfy { $0.first == "review" && !$0.contains("exit") && !$0.contains("install") && !$0.contains("daemon") }, "zero forbidden client commands")
+        for replacement in ["stale-partial-review", "changed-occupant-review"] {
+            let invalidated = ReviewModel(client: FixtureReviewClient([
+                .init(data: healthy), .init(data: try oneSelectionPlan()), .init(data: try wrapped(replacement))
+            ]))
+            await invalidated.refresh()
+            invalidated.toggle(invalidated.records.first { $0.lifecycle.state == "idle" }!)
+            await invalidated.requestPlan()
+            try require(invalidated.plan != nil && !invalidated.selection.isEmpty, "plan exists before replacement")
+            await invalidated.refresh()
+            try require(invalidated.selection.isEmpty && invalidated.plan == nil && invalidated.notice != nil, replacement + " invalidates existing selection and plan visibly")
+        }
         planned.endpoint = "unix:///different.sock"
         try require(planned.selection.isEmpty && planned.plan == nil && planned.needsRefresh, "target change invalidates prior data selection")
         planned.toggle(idle)
@@ -243,7 +307,7 @@ actor FixtureReviewClient: ReviewClient {
         try render(model, to: directory.appendingPathComponent("plan.png"), height: 1500)
     }
 
-    @MainActor static func render(_ model: ReviewModel, to url: URL, height: CGFloat = 1100) throws {
+    @MainActor static func render(_ model: ReviewModel, to url: URL, height: CGFloat = 1100, bottom: Bool = false) throws {
         _ = NSApplication.shared
         // AppKit-backed controls and ScrollView are not supported by
         // ImageRenderer. Render the real NSHostingView, including native fields.
@@ -253,6 +317,23 @@ actor FixtureReviewClient: ReviewClient {
         window.contentView = host
         host.frame = NSRect(x: 0, y: 0, width: 940, height: height)
         host.layoutSubtreeIfNeeded()
+        if bottom {
+            func scrollView(_ view: NSView) -> NSScrollView? {
+                if let scroll = view as? NSScrollView { return scroll }
+                return view.subviews.lazy.compactMap { scrollView($0) }.first
+            }
+            guard let scroll = scrollView(host), let document = scroll.documentView else {
+                throw ReviewClientError.message("Live plan scroll view unavailable")
+            }
+            // LazyVStack refines its estimated document height as rows become
+            // visible. Settle layout after each scroll before finding the end.
+            for _ in 0..<12 {
+                scroll.contentView.scroll(to: NSPoint(x: 0, y: max(0, document.bounds.height - scroll.contentView.bounds.height)))
+                scroll.reflectScrolledClipView(scroll.contentView)
+                host.layoutSubtreeIfNeeded()
+                RunLoop.current.run(until: Date().addingTimeInterval(0.02))
+            }
+        }
         window.display()
         guard let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {
             throw ReviewClientError.message("SwiftUI fixture render failed")

@@ -7,6 +7,18 @@ bash menubar/test-review.sh
 bash menubar/test-review.sh --render /tmp/perf-guard-review-visual
 ```
 
+Independent M1 acceptance also bridges actual fixture-backed Go CLI envelopes
+through the production Swift model:
+
+```sh
+bash scripts/test-m1-acceptance.sh
+```
+
+This builds the existing Go CLI test executable with frozen provider injection,
+runs real `review` and multi-selection `review plan` commands, then compares
+Swift record IDs, reason sets, reviewability and selected plan identities with
+the same frozen healthy input. It adds no eligibility policy or live target.
+
 The standalone harness compiles only the review model, view and harness. It does
 not launch the menu app, call its existing daemon controls, enable login items or
 install anything. Its executable/module cache are temporary. Screenshots render
@@ -39,6 +51,10 @@ bash menubar/test-review.sh --live /tmp/m1-perf-guard unix:///example/herdr.sock
 ```
 
 This performs one list and, when a reviewable record exists, one read-only plan.
+It navigates subsequent pages when needed to find a reviewable record. Failure to
+find one fails the real-plan gate. With a screenshot argument, it captures the
+review viewport and an additional `.plan.png` scrolled to the plan in the exact
+production view; both files contain private live data and must stay local.
 It never exits a session. Keep real screenshots/runtime paths outside the public
 repository. No reviewable live record is reported explicitly, not passed as a
 real plan. #12 owns live integration. Inherited context, when provided by the
