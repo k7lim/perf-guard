@@ -1,20 +1,21 @@
 import AppKit
 import SwiftUI
 
-class StatusBarController: NSObject {
+@MainActor class StatusBarController: NSObject {
     private var statusItem: NSStatusItem
     private var popover: NSPopover
     private let model = LiveStatusModel()
     private var observation: NSKeyValueObservation?
+    private var reviewWindow: NSWindow?
 
     override init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         popover = NSPopover()
         super.init()
 
-        popover.contentSize = NSSize(width: 320, height: 470)
+        popover.contentSize = NSSize(width: 320, height: 540)
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: StatusView(model: model))
+        popover.contentViewController = NSHostingController(rootView: StatusView(model: model, onReviewSessions: { [weak self] in self?.showReviewSessions() }))
 
         updateIcon()
 
@@ -29,6 +30,27 @@ class StatusBarController: NSObject {
                 self?.updateIcon()
             }
         }
+    }
+
+    private func showReviewSessions() {
+        popover.performClose(nil)
+        if let window = reviewWindow {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        let review = ReviewModel()
+        let controller = NSHostingController(rootView: ReviewView(model: review))
+        let window = NSWindow(contentViewController: controller)
+        window.title = "Performance Guard — Review Sessions"
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.setContentSize(NSSize(width: 900, height: 760))
+        window.isReleasedWhenClosed = false
+        window.center()
+        reviewWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        Task { await review.refresh() }
     }
 
     private func updateIcon() {
