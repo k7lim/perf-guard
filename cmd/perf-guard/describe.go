@@ -47,11 +47,14 @@ func describeCmd() *cobra.Command {
 				Version:     "0.2.0",
 				Description: "macOS memory pressure monitor and process manager",
 				EnvVars: map[string]string{
-					"OUTPUT_FORMAT": "json|text — override output format for all commands",
+					"OUTPUT_FORMAT":             "json|text — override output format for all commands",
+					"PERF_GUARD_HERDR_ENDPOINT": "Explicit inherited absolute local Unix endpoint for review",
+					"PERF_GUARD_HERDR_SESSION":  "Explicit inherited session scope for review",
 				},
 				ConfigPath: "~/.config/perf-guard/config.toml",
 				StatePath:  "~/.config/perf-guard/state.json",
 				Commands: map[string]commandSchema{
+					"review": reviewCommandSchema(),
 					"status": {
 						Description: "Show current memory pressure and process stats",
 						Flags: map[string]flagInfo{
